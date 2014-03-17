@@ -26,6 +26,7 @@
 #include "Charmonizer/Core/ConfWriterRuby.h"
 #include "Charmonizer/Core/Util.h"
 #include "Charmonizer/Core/Compiler.h"
+#include "Charmonizer/Core/Make.h"
 #include "Charmonizer/Core/OperatingSystem.h"
 
 int

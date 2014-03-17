@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "Charmonizer/Core/Util.h"
+#include "Charmonizer/Core/OperatingSystem.h"
 
 /* Global verbosity setting. */
 int chaz_Util_verbosity = 1;

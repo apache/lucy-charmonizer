@@ -20,6 +20,7 @@
 #include "Charmonizer/Probe/VariadicMacros.h"
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 
 /* Code for verifying ISO-style variadic macros. */

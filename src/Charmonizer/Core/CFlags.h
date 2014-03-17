@@ -24,6 +24,8 @@
 extern "C" {
 #endif
 
+#include "Charmonizer/Core/SharedLibrary.h"
+
 #define CHAZ_CFLAGS_STYLE_POSIX  1
 #define CHAZ_CFLAGS_STYLE_GNU    2
 #define CHAZ_CFLAGS_STYLE_MSVC   3

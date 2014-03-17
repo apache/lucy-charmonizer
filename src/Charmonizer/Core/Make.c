@@ -15,6 +15,7 @@
  */
 
 #include <ctype.h>
+#include <stdlib.h>
 #include <string.h>
 #include "Charmonizer/Core/Make.h"
 #include "Charmonizer/Core/Compiler.h"
