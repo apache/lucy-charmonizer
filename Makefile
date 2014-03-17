@@ -17,8 +17,9 @@
 
 CC= cc
 DEFS=
-CFLAGS= -Isrc $(DEFS) 
+CFLAGS= -I. -Isrc $(DEFS)
 PROGNAME= charmonize
+CHARMONY_H= charmony.h
 PROBES=
 FILES=
 OUT=
@@ -58,12 +59,15 @@ TEST_OBJS= src/Charmonizer/Test.o src/Charmonizer/Test/TestDirManip.o src/Charmo
 
 HEADERS= src/Charmonizer/Core/Compiler.h src/Charmonizer/Core/ConfWriter.h src/Charmonizer/Core/ConfWriterC.h src/Charmonizer/Core/ConfWriterPerl.h src/Charmonizer/Core/ConfWriterRuby.h src/Charmonizer/Core/Defines.h src/Charmonizer/Core/HeaderChecker.h src/Charmonizer/Core/OperatingSystem.h src/Charmonizer/Core/Util.h src/Charmonizer/Probe.h src/Charmonizer/Probe/AtomicOps.h src/Charmonizer/Probe/DirManip.h src/Charmonizer/Probe/Floats.h src/Charmonizer/Probe/FuncMacro.h src/Charmonizer/Probe/Headers.h src/Charmonizer/Probe/Integers.h src/Charmonizer/Probe/LargeFiles.h src/Charmonizer/Probe/Memory.h src/Charmonizer/Probe/SymbolVisibility.h src/Charmonizer/Probe/UnusedVars.h src/Charmonizer/Probe/VariadicMacros.h src/Charmonizer/Test.h
 
-CLEANABLE= $(OBJS) $(PROGNAME) $(TEST_OBJS) $(TESTS) 
+CLEANABLE= $(OBJS) $(PROGNAME) $(CHARMONY_H) $(TEST_OBJS) $(TESTS)
 
 .c.o:
 	$(CC) $(CFLAGS) -c $*.c -o $@
 
 all: $(PROGNAME)
+
+$(CHARMONY_H): $(PROGNAME)
+	./$(PROGNAME) --cc=$(CC) --enable-c
 
 meld:
 	$(PERL) buildbin/meld.pl --probes=$(PROBES) --files=$(FILES) --out=$(OUT)
@@ -72,6 +76,8 @@ $(PROGNAME): $(OBJS)
 	$(CC) $(CFLAGS) $(OBJS) -o $(PROGNAME)
 
 $(OBJS) $(TEST_OBJS): $(HEADERS)
+
+$(TEST_OBJS): $(CHARMONY_H)
 
 tests: $(TESTS)
 
@@ -95,6 +101,9 @@ TestUnusedVars: src/Charmonizer/Test.o src/Charmonizer/Test/TestUnusedVars.o
 
 TestVariadicMacros: src/Charmonizer/Test.o src/Charmonizer/Test/TestVariadicMacros.o
 	$(CC) $(CFLAGS) src/Charmonizer/Test/TestVariadicMacros.o src/Charmonizer/Test.o -o $@
+
+test: tests
+	prove ./Test*
 
 clean:
 	rm -f $(CLEANABLE)
