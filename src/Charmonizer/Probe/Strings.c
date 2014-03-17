@@ -18,6 +18,8 @@
 #include "Charmonizer/Core/ConfWriter.h"
 #include "Charmonizer/Probe/Strings.h"
 
+#include <stdlib.h>
+
 /* Check for C99-compatible snprintf and possible replacements.
  */
 static void

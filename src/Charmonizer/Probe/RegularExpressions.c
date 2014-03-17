@@ -15,6 +15,7 @@
  */
 
 #include "Charmonizer/Core/HeaderChecker.h"
+#include "Charmonizer/Core/Compiler.h"
 #include "Charmonizer/Core/ConfWriter.h"
 #include "Charmonizer/Probe/RegularExpressions.h"
 
