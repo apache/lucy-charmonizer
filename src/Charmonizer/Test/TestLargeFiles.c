@@ -15,6 +15,7 @@
  */
 
 #define CHAZ_USE_SHORT_NAMES
+#define CHY_EMPLOY_INTEGERLITERALS
 
 #include "charmony.h"
 #include <string.h>
