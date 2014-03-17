@@ -26,7 +26,32 @@ PERL=/usr/bin/perl
 
 TESTS= TestDirManip TestFuncMacro TestHeaders TestIntegers TestLargeFiles TestUnusedVars TestVariadicMacros
 
-OBJS= charmonize.o src/Charmonizer/Core/Compiler.o src/Charmonizer/Core/ConfWriter.o src/Charmonizer/Core/ConfWriterC.o src/Charmonizer/Core/ConfWriterPerl.o src/Charmonizer/Core/ConfWriterRuby.o src/Charmonizer/Core/HeaderChecker.o src/Charmonizer/Core/OperatingSystem.o src/Charmonizer/Core/Util.o src/Charmonizer/Probe.o src/Charmonizer/Probe/AtomicOps.o src/Charmonizer/Probe/DirManip.o src/Charmonizer/Probe/Floats.o src/Charmonizer/Probe/FuncMacro.o src/Charmonizer/Probe/Headers.o src/Charmonizer/Probe/Integers.o src/Charmonizer/Probe/LargeFiles.o src/Charmonizer/Probe/Memory.o src/Charmonizer/Probe/SymbolVisibility.o src/Charmonizer/Probe/UnusedVars.o src/Charmonizer/Probe/VariadicMacros.o
+OBJS= \
+    charmonize.o \
+    src/Charmonizer/Core/CFlags.o \
+    src/Charmonizer/Core/Compiler.o \
+    src/Charmonizer/Core/ConfWriter.o \
+    src/Charmonizer/Core/ConfWriterC.o \
+    src/Charmonizer/Core/ConfWriterPerl.o \
+    src/Charmonizer/Core/ConfWriterPython.o \
+    src/Charmonizer/Core/ConfWriterRuby.o \
+    src/Charmonizer/Core/HeaderChecker.o \
+    src/Charmonizer/Core/Make.o \
+    src/Charmonizer/Core/OperatingSystem.o \
+    src/Charmonizer/Core/SharedLibrary.o \
+    src/Charmonizer/Core/Util.o \
+    src/Charmonizer/Probe.o \
+    src/Charmonizer/Probe/AtomicOps.o \
+    src/Charmonizer/Probe/DirManip.o \
+    src/Charmonizer/Probe/Floats.o \
+    src/Charmonizer/Probe/FuncMacro.o \
+    src/Charmonizer/Probe/Headers.o \
+    src/Charmonizer/Probe/Integers.o \
+    src/Charmonizer/Probe/LargeFiles.o \
+    src/Charmonizer/Probe/Memory.o \
+    src/Charmonizer/Probe/SymbolVisibility.o \
+    src/Charmonizer/Probe/UnusedVars.o \
+    src/Charmonizer/Probe/VariadicMacros.o
 
 TEST_OBJS= src/Charmonizer/Test.o src/Charmonizer/Test/TestDirManip.o src/Charmonizer/Test/TestFuncMacro.o src/Charmonizer/Test/TestHeaders.o src/Charmonizer/Test/TestIntegers.o src/Charmonizer/Test/TestLargeFiles.o src/Charmonizer/Test/TestUnusedVars.o src/Charmonizer/Test/TestVariadicMacros.o
 
