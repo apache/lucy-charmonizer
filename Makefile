@@ -46,6 +46,7 @@ OBJS= \
     src/Charmonizer/Probe/Floats.o \
     src/Charmonizer/Probe/FuncMacro.o \
     src/Charmonizer/Probe/Headers.o \
+    src/Charmonizer/Probe/Booleans.o \
     src/Charmonizer/Probe/Integers.o \
     src/Charmonizer/Probe/LargeFiles.o \
     src/Charmonizer/Probe/Memory.o \

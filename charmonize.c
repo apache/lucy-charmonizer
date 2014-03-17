@@ -26,6 +26,7 @@
 #include "Charmonizer/Probe/Floats.h"
 #include "Charmonizer/Probe/FuncMacro.h"
 #include "Charmonizer/Probe/Headers.h"
+#include "Charmonizer/Probe/Booleans.h"
 #include "Charmonizer/Probe/Integers.h"
 #include "Charmonizer/Probe/LargeFiles.h"
 #include "Charmonizer/Probe/Memory.h"
@@ -125,6 +126,7 @@ int main(int argc, const char **argv) {
     chaz_Headers_run();
     chaz_AtomicOps_run();
     chaz_FuncMacro_run();
+    chaz_Booleans_run();
     chaz_Integers_run();
     chaz_Floats_run();
     chaz_LargeFiles_run();
