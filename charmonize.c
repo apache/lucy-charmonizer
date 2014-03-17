@@ -109,7 +109,7 @@ S_parse_arguments(int argc, char **argv, struct CLIArgs *args) {
 
 }
 
-int main(int argc, char **argv) {
+int main(int argc, const char **argv) {
     /* Initialize. */
     {
         struct chaz_CLIArgs args;
