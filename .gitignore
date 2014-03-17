@@ -1,3 +1,4 @@
+*.o
 TestDirManip
 TestFuncMacro
 TestHeaders
@@ -5,4 +6,5 @@ TestIntegers
 TestLargeFiles
 TestUnusedVars
 TestVariadicMacros
+charmony.h
 charmonize
