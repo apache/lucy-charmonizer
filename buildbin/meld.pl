@@ -125,6 +125,7 @@ if ( -e $outfile ) {
 # Start the composite.
 open( my $out_fh, '>', $outfile )
     or die "Can't open '$outfile': $!";
+binmode $out_fh;
 print $out_fh meld_start();
 
 # Process core files.
@@ -139,7 +140,7 @@ for my $file (@user_files) {
     # Comment out pound-includes for files being inlined.
     $content =~ s|^(#include "Charmonizer[^\n]+)\n|/* $1 */\n|msg;
 
-    print $out_fh qq|#line 1 "$file"\n|;
+    print $out_fh line_directive(1, $file);
     print $out_fh $content;
 }
 
@@ -161,7 +162,7 @@ sub pare_charm_file {
     # Add a #line directive.
     my $new_num_newlines = $content =~ tr/\n/\n/;
     my $starting_line = 1 + $num_newlines - $new_num_newlines;
-    $content = qq|#line $starting_line "$path"\n$content|;
+    $content = line_directive($starting_line, $path) . $content;
 
     # Remove closing C++ guards (if this is a header).
     $content =~ s/^#ifdef __cplusplus.*?#endif\n+//ms;
@@ -180,6 +181,12 @@ sub slurp {
     my $path = shift;
     open( my $fh, '<', $path ) or die "Can't open '$path': $!";
     return do { local $/; <$fh> };
+}
+
+sub line_directive {
+    my ( $lineno, $file ) = @_;
+    $file =~ s'\\'/'g;
+    return qq|#line $lineno "$file"\n|;
 }
 
 sub meld_start {
