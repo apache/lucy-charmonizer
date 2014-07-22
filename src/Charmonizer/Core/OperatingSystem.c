@@ -152,7 +152,7 @@ chaz_OS_remove(const char *name) {
     size_t  name_len = strlen(name);
     size_t  i;
     char   *temp_name = (char*)malloc(name_len + num_random_chars + 1);
-    const char *working_name;
+    const char *working_name = name;
     clock_t start, now;
 
     strcpy(temp_name, name);
@@ -161,23 +161,26 @@ chaz_OS_remove(const char *name) {
     }
     temp_name[name_len+num_random_chars] = '\0';
 
-    if (rename(name, temp_name) == 0) {
-        working_name = temp_name;
-    }
-    else if (errno == ENOENT) {
-        /* No such file or directory, so no point in trying to remove it.
-         * (Technically ENOENT is POSIX but hopefully this works.) */
-        free(temp_name);
-        return 0;
-    }
-    else {
-        /* Error during rename, remove using old name. */
-        working_name = name;
-    }
-
-    /* Try over and over again for around 1 second to delete the file.
+    /* Try over and over again for around 1 second to rename the file.
      * Ideally we would sleep between attempts, but sleep functionality is not
      * portable. */
+    start = now = clock();
+    while (now - start < CLOCKS_PER_SEC) {
+        now = clock();
+        if (!rename(name, temp_name)) {
+            /* The rename succeeded. */
+            working_name = temp_name;
+            break;
+        }
+        else if (errno == ENOENT) {
+            /* No such file or directory, so no point in trying to remove it.
+             * (Technically ENOENT is POSIX but hopefully this works.) */
+            free(temp_name);
+            return 0;
+        }
+    }
+
+    /* Try over and over again for around 1 second to delete the file. */
     start = now = clock();
     while (!retval && now - start < CLOCKS_PER_SEC) {
         now = clock();
