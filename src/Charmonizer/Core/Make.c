@@ -46,12 +46,10 @@ struct chaz_MakeFile {
 /* Static vars. */
 static struct {
     char *make_command;
-    int   is_gnu_make;
-    int   is_nmake;
     int   shell_type;
 } chaz_Make = {
     NULL,
-    0, 0, 0
+    0
 };
 
 /* Detect make command.
@@ -89,19 +87,12 @@ chaz_Make_init(void) {
     make = chaz_Make.make_command;
 
     if (make) {
-        if (strcmp(make, "make") == 0
-            || strcmp(make, "gmake") == 0
-            || strcmp(make, "mingw32-make") == 0
-            || strcmp(make, "mingw64-make") == 0
-           ) {
-            /* TODO: Add a feature test for GNU make. */
-            chaz_Make.is_gnu_make = 1;
-            /* TODO: Feature test which shell GNU make uses on Windows. */
-            chaz_Make.shell_type = CHAZ_OS_POSIX;
-        }
-        else if (strcmp(make, "nmake") == 0) {
-            chaz_Make.is_nmake = 1;
+        if (strcmp(make, "nmake") == 0) {
             chaz_Make.shell_type = CHAZ_OS_CMD_EXE;
+        }
+        else {
+            /* TODO: Feature test which shell make uses on Windows. */
+            chaz_Make.shell_type = CHAZ_OS_POSIX;
         }
     }
 }
@@ -645,34 +636,31 @@ chaz_MakeRule_add_make_command(chaz_MakeRule *rule, const char *dir,
                                const char *target) {
     char *command;
 
-    if (chaz_Make.is_gnu_make) {
+    if (chaz_Make.shell_type == CHAZ_OS_POSIX) {
         if (!target) {
-            command = chaz_Util_join(" ", "$(MAKE)", "-C", dir, NULL);
+            command = chaz_Util_join("", "(cd ", dir, " && $(MAKE))", NULL);
         }
         else {
-            command = chaz_Util_join(" ", "$(MAKE)", "-C", dir, target, NULL);
+            command = chaz_Util_join("", "(cd ", dir, " && $(MAKE) ", target,
+                                     ")", NULL);
         }
         chaz_MakeRule_add_command(rule, command);
         free(command);
     }
-    else if (chaz_Make.is_nmake) {
-        command = chaz_Util_join(" ", "cd", dir, NULL);
-        chaz_MakeRule_add_command(rule, command);
-        free(command);
-
+    else if (chaz_Make.shell_type == CHAZ_OS_CMD_EXE) {
         if (!target) {
-            chaz_MakeRule_add_command(rule, "$(MAKE) /nologo");
+            command = chaz_Util_join(" ", "pushd", dir, "&& $(MAKE) && popd",
+                                     NULL);
         }
         else {
-            command = chaz_Util_join(" ", "$(MAKE) /nologo", target, NULL);
-            chaz_MakeRule_add_command(rule, command);
-            free(command);
+            command = chaz_Util_join(" ", "pushd", dir, "&& $(MAKE)", target,
+                                     "&& popd", NULL);
         }
-
-        chaz_MakeRule_add_command(rule, "cd $(MAKEDIR)");
+        chaz_MakeRule_add_command(rule, command);
+        free(command);
     }
     else {
-        chaz_Util_die("Couldn't find a supported 'make' utility.");
+        chaz_Util_die("Unsupported shell type: %d", chaz_Make.shell_type);
     }
 }
 
