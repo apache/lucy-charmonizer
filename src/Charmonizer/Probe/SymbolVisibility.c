@@ -39,6 +39,18 @@ chaz_SymbolVisibility_run(void) {
     chaz_ConfWriter_start_module("SymbolVisibility");
     chaz_CFlags_set_warnings_as_errors(temp_cflags);
 
+    /* Sun C. */
+    if (!can_control_visibility) {
+        char export_sun[] = "__global";
+        sprintf(code_buf, chaz_SymbolVisibility_symbol_exporting_code,
+                export_sun);
+        if (chaz_CC_test_compile(code_buf)) {
+            can_control_visibility = true;
+            chaz_ConfWriter_add_def("EXPORT", export_sun);
+            chaz_ConfWriter_add_def("IMPORT", export_sun);
+        }
+    }
+
     /* Windows. */
     if (!can_control_visibility) {
         char export_win[] = "__declspec(dllexport)";

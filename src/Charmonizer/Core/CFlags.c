@@ -224,9 +224,16 @@ chaz_CFlags_compile_shared_library(chaz_CFlags *flags) {
 
 void
 chaz_CFlags_hide_symbols(chaz_CFlags *flags) {
-    if (flags->style == CHAZ_CFLAGS_STYLE_GNU
-        && strcmp(chaz_OS_shared_lib_ext(), ".dll") != 0) {
-        chaz_CFlags_append(flags, "-fvisibility=hidden");
+    if (flags->style == CHAZ_CFLAGS_STYLE_GNU) {
+        if (strcmp(chaz_OS_shared_lib_ext(), ".dll") != 0) {
+            chaz_CFlags_append(flags, "-fvisibility=hidden");
+        }
+    }
+    else if (flags->style == CHAZ_CFLAGS_STYLE_SUN_C) {
+        if (chaz_CC_sun_c_version_num() >= 0x550) {
+            /* Sun Studio 8. */
+            chaz_CFlags_append(flags, "-xldscope=hidden");
+        }
     }
 }
 
