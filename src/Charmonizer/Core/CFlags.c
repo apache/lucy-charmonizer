@@ -146,6 +146,9 @@ chaz_CFlags_enable_optimization(chaz_CFlags *flags) {
     else if (flags->style == CHAZ_CFLAGS_STYLE_GNU) {
         string = "-O2";
     }
+    else if (flags->style == CHAZ_CFLAGS_STYLE_SUN_C) {
+        string = "-xO4";
+    }
     else {
         /* POSIX */
         string = "-O 1";
