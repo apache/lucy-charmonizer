@@ -171,6 +171,9 @@ chaz_CFlags_disable_strict_aliasing(chaz_CFlags *flags) {
     else if (flags->style == CHAZ_CFLAGS_STYLE_GNU) {
         chaz_CFlags_append(flags, "-fno-strict-aliasing");
     }
+    else if (flags->style == CHAZ_CFLAGS_STYLE_SUN_C) {
+        chaz_CFlags_append(flags, "-xalias_level=any");
+    }
     else {
         chaz_Util_die("Don't know how to disable strict aliasing with '%s'",
                       chaz_CC_get_cc());
