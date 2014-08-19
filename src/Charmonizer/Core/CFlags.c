@@ -222,6 +222,9 @@ chaz_CFlags_compile_shared_library(chaz_CFlags *flags) {
             return;
         }
     }
+    else if (flags->style == CHAZ_CFLAGS_STYLE_SUN_C) {
+        string = "-KPIC";
+    }
     else {
         return;
     }
@@ -257,6 +260,9 @@ chaz_CFlags_link_shared_library(chaz_CFlags *flags) {
             string = "-shared";
         }
     }
+    else if (flags->style == CHAZ_CFLAGS_STYLE_SUN_C) {
+        string = "-G";
+    }
     else {
         chaz_Util_die("Don't know how to link a shared library with '%s'",
                       chaz_CC_get_cc());
@@ -267,25 +273,31 @@ chaz_CFlags_link_shared_library(chaz_CFlags *flags) {
 void
 chaz_CFlags_set_shared_library_version(chaz_CFlags *flags,
                                        chaz_SharedLib *lib) {
-    const char *shlib_ext = chaz_OS_shared_lib_ext();
-    char       *string;
+    if (flags->style == CHAZ_CFLAGS_STYLE_GNU) {
+        const char *shlib_ext = chaz_OS_shared_lib_ext();
 
-    if (flags->style != CHAZ_CFLAGS_STYLE_GNU
-        || strcmp(shlib_ext, ".dll") == 0) {
-        return;
+        if (strcmp(shlib_ext, ".dylib") == 0) {
+            const char *version = chaz_SharedLib_get_version(lib);
+            char *string
+                = chaz_Util_join(" ", "-current_version", version, NULL);
+            chaz_CFlags_append(flags, string);
+            free(string);
+        }
+        else if (strcmp(shlib_ext, ".so") == 0) {
+            char *soname = chaz_SharedLib_major_version_filename(lib);
+            char *string = chaz_Util_join("", "-Wl,-soname,", soname, NULL);
+            chaz_CFlags_append(flags, string);
+            free(string);
+            free(soname);
+        }
     }
-
-    if (strcmp(chaz_OS_shared_lib_ext(), ".dylib") == 0) {
-        const char *version = chaz_SharedLib_get_version(lib);
-        string = chaz_Util_join(" ", "-current_version", version, NULL);
-    }
-    else {
+    else if (flags->style == CHAZ_CFLAGS_STYLE_SUN_C) {
         char *soname = chaz_SharedLib_major_version_filename(lib);
-        string = chaz_Util_join("", "-Wl,-soname,", soname, NULL);
+        char *string = chaz_Util_join(" ", "-h", soname, NULL);
+        chaz_CFlags_append(flags, string);
+        free(string);
         free(soname);
     }
-    chaz_CFlags_append(flags, string);
-    free(string);
 }
 
 void
