@@ -29,6 +29,7 @@ extern "C" {
 #define CHAZ_CFLAGS_STYLE_POSIX  1
 #define CHAZ_CFLAGS_STYLE_GNU    2
 #define CHAZ_CFLAGS_STYLE_MSVC   3
+#define CHAZ_CFLAGS_STYLE_SUN_C  4
 
 typedef struct chaz_CFlags chaz_CFlags;
 

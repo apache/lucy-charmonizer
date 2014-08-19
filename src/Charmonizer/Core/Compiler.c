@@ -97,6 +97,9 @@ chaz_CC_init(const char *compiler_command, const char *compiler_flags) {
     else if (chaz_CC.intval__MSC_VER) {
         chaz_CC.cflags_style = CHAZ_CFLAGS_STYLE_MSVC;
     }
+    else if (chaz_CC.intval___SUNPRO_C) {
+        chaz_CC.cflags_style = CHAZ_CFLAGS_STYLE_SUN_C;
+    }
     else {
         chaz_CC.cflags_style = CHAZ_CFLAGS_STYLE_POSIX;
     }
