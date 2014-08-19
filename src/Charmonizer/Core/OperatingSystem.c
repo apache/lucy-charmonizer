@@ -19,6 +19,7 @@
 #include <stdarg.h>
 #include <ctype.h>
 #include <time.h>
+#include <errno.h>
 
 #include "Charmonizer/Core/Compiler.h"
 #include "Charmonizer/Core/Util.h"
