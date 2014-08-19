@@ -183,6 +183,9 @@ chaz_CFlags_set_warnings_as_errors(chaz_CFlags *flags) {
     else if (flags->style == CHAZ_CFLAGS_STYLE_GNU) {
         string = "-Werror";
     }
+    else if (flags->style == CHAZ_CFLAGS_STYLE_SUN_C) {
+        string = "-errwarn=%all";
+    }
     else {
         chaz_Util_die("Don't know how to set warnings as errors with '%s'",
                       chaz_CC_get_cc());
