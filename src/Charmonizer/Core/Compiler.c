@@ -44,12 +44,13 @@ static struct {
     int       intval___GNUC_PATCHLEVEL__;
     int       intval__MSC_VER;
     int       intval___clang__;
+    int       intval___SUNPRO_C;
     chaz_CFlags *extra_cflags;
     chaz_CFlags *temp_cflags;
 } chaz_CC = {
     NULL, NULL, NULL,
     "", "",
-    0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0,
     NULL, NULL
 };
 
@@ -144,8 +145,9 @@ chaz_CC_detect_known_compilers(void) {
                 chaz_CC.intval___GNUC_MINOR__,
                 chaz_CC.intval___GNUC_PATCHLEVEL__);
     }
-    chaz_CC.intval__MSC_VER  = chaz_CC_detect_macro("_MSC_VER");
-    chaz_CC.intval___clang__ = chaz_CC_detect_macro("__clang__");
+    chaz_CC.intval__MSC_VER   = chaz_CC_detect_macro("_MSC_VER");
+    chaz_CC.intval___clang__  = chaz_CC_detect_macro("__clang__");
+    chaz_CC.intval___SUNPRO_C = chaz_CC_detect_macro("__SUNPRO_C");
 }
 
 void
@@ -354,6 +356,11 @@ chaz_CC_gcc_version(void) {
 int
 chaz_CC_msvc_version_num(void) {
     return chaz_CC.intval__MSC_VER;
+}
+
+int
+chaz_CC_sun_c_version_num(void) {
+    return chaz_CC.intval___SUNPRO_C;
 }
 
 const char*
