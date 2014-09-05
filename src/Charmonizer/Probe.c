@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include "Charmonizer/Probe.h"
 #include "Charmonizer/Core/HeaderChecker.h"
 #include "Charmonizer/Core/ConfWriter.h"
@@ -69,11 +70,30 @@ chaz_Probe_parse_cli_args(int argc, const char *argv[],
             args->code_coverage = 1;
         }
         else if (memcmp(arg, "--cc=", 5) == 0) {
-            if (strlen(arg) > CHAZ_PROBE_MAX_CC_LEN - 5) {
+            size_t len = strlen(arg);
+            size_t l   = 5;
+            size_t r   = len;
+            size_t trimmed_len;
+
+            if (len > CHAZ_PROBE_MAX_CC_LEN - 5) {
                 fprintf(stderr, "Exceeded max length for compiler command");
                 exit(1);
             }
-            strcpy(args->cc, arg + 5);
+
+            /*
+             * Some Perl setups have a 'cc' config value with leading
+             * whitespace.
+             */
+            while (isspace(arg[l])) {
+                ++l;
+            }
+            while (r > l && isspace(arg[r-1])) {
+                --r;
+            }
+
+            trimmed_len = r - l;
+            memcpy(args->cc, arg + l, trimmed_len);
+            args->cc[trimmed_len] = '\0';
         }
     } /* preserve value of i */
 
