@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* Charmonizer/Core/SharedLibrary.h
+/* Charmonizer/Core/Library.h
  */
 
 #ifndef H_CHAZ_SHARED_LIB

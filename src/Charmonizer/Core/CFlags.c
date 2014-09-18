@@ -20,7 +20,7 @@
 #include "Charmonizer/Core/Compiler.h"
 #include "Charmonizer/Core/Util.h"
 #include "Charmonizer/Core/OperatingSystem.h"
-#include "Charmonizer/Core/SharedLibrary.h"
+#include "Charmonizer/Core/Library.h"
 
 struct chaz_CFlags {
     int   style;

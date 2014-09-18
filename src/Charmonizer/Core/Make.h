@@ -25,7 +25,7 @@ extern "C" {
 #endif
 
 #include "Charmonizer/Core/CFlags.h"
-#include "Charmonizer/Core/SharedLibrary.h"
+#include "Charmonizer/Core/Library.h"
 
 typedef struct chaz_MakeFile chaz_MakeFile;
 typedef struct chaz_MakeVar chaz_MakeVar;
