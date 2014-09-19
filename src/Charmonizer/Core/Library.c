@@ -25,6 +25,9 @@ struct chaz_Lib {
     char *name;
     char *version;
     char *major_version;
+    int   is_static;
+    int   is_shared;
+    chaz_LibType lib_type;
 };
 
 static char*
@@ -34,12 +37,24 @@ static const char*
 S_get_prefix(void);
 
 chaz_Lib*
-chaz_Lib_new(const char *name, const char *version,
-                   const char *major_version) {
+chaz_Lib_new(const char *name, chaz_LibType lib_type, const char *version,
+             const char *major_version) {
     chaz_Lib *lib = (chaz_Lib*)malloc(sizeof(chaz_Lib));
     lib->name          = chaz_Util_strdup(name);
     lib->version       = chaz_Util_strdup(version);
     lib->major_version = chaz_Util_strdup(major_version);
+    lib->lib_type      = lib_type;
+    if (lib_type == chaz_Lib_SHARED) {
+        lib->is_shared = 1;
+        lib->is_static = 0;
+    }
+    else if (lib_type == chaz_Lib_STATIC) {
+        lib->is_shared = 0;
+        lib->is_static = 1;
+    }
+    else {
+        chaz_Util_die("Invalid value for lib_type: %d", lib_type);
+    }
     return lib;
 }
 
@@ -66,31 +81,45 @@ chaz_Lib_get_major_version(chaz_Lib *lib) {
     return lib->major_version;
 }
 
+int
+chaz_Lib_is_shared (chaz_Lib *lib) {
+    return lib->is_shared;
+}
+
+int
+chaz_Lib_is_static (chaz_Lib *lib) {
+    return lib->is_static;
+}
+
 char*
 chaz_Lib_filename(chaz_Lib *lib) {
-    const char *shlib_ext = chaz_OS_shared_lib_ext();
+    const char *ext = lib->is_shared
+                      ? chaz_OS_shared_lib_ext()
+                      : chaz_OS_static_lib_ext();
 
-    if (strcmp(shlib_ext, ".dll") == 0) {
-        return S_build_filename(lib, lib->major_version, shlib_ext);
+    if ((strcmp(ext, ".dll") == 0) || strcmp(ext, ".lib") == 0) {
+        return S_build_filename(lib, lib->major_version, ext);
     }
     else {
-        return S_build_filename(lib, lib->version, shlib_ext);
+        return S_build_filename(lib, lib->version, ext);
     }
 }
 
 char*
 chaz_Lib_major_version_filename(chaz_Lib *lib) {
-    const char *shlib_ext = chaz_OS_shared_lib_ext();
-
-    return S_build_filename(lib, lib->major_version, shlib_ext);
+    const char *ext = lib->is_shared
+                      ? chaz_OS_shared_lib_ext()
+                      : chaz_OS_static_lib_ext();
+    return S_build_filename(lib, lib->major_version, ext);
 }
 
 char*
 chaz_Lib_no_version_filename(chaz_Lib *lib) {
-    const char *prefix    = S_get_prefix();
-    const char *shlib_ext = chaz_OS_shared_lib_ext();
-
-    return chaz_Util_join("", prefix, lib->name, shlib_ext, NULL);
+    const char *prefix = S_get_prefix();
+    const char *ext = lib->is_shared
+                      ? chaz_OS_shared_lib_ext()
+                      : chaz_OS_static_lib_ext();
+    return chaz_Util_join("", prefix, lib->name, ext, NULL);
 }
 
 char*
@@ -108,6 +137,8 @@ S_build_filename(chaz_Lib *lib, const char *version, const char *ext) {
     const char *prefix    = S_get_prefix();
     const char *shlib_ext = chaz_OS_shared_lib_ext();
 
+    /* Use `shlib_ext` as a proxy for OS to determine behavior, but append
+     * the supplied `ext`. */
     if (strcmp(shlib_ext, ".dll") == 0) {
         return chaz_Util_join("", prefix, lib->name, "-", version, ext, NULL);
     }

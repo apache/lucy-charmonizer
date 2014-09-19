@@ -26,9 +26,14 @@ extern "C" {
 
 typedef struct chaz_Lib chaz_Lib;
 
+typedef enum {
+    chaz_Lib_SHARED = 1,
+    chaz_Lib_STATIC = 2
+} chaz_LibType;
+
 chaz_Lib*
-chaz_Lib_new(const char *name, const char *version,
-                   const char *major_version);
+chaz_Lib_new(const char *name, chaz_LibType type, const char *version,
+             const char *major_version);
 
 void
 chaz_Lib_destroy(chaz_Lib *flags);
@@ -41,6 +46,12 @@ chaz_Lib_get_version(chaz_Lib *lib);
 
 const char*
 chaz_Lib_get_major_version(chaz_Lib *lib);
+
+int
+chaz_Lib_is_shared(chaz_Lib *lib);
+
+int
+chaz_Lib_is_static(chaz_Lib *lib);
 
 char*
 chaz_Lib_filename(chaz_Lib *lib);
