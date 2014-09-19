@@ -17,50 +17,50 @@
 /* Charmonizer/Core/Library.h
  */
 
-#ifndef H_CHAZ_SHARED_LIB
-#define H_CHAZ_SHARED_LIB
+#ifndef H_CHAZ_LIB
+#define H_CHAZ_LIB
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef struct chaz_SharedLib chaz_SharedLib;
+typedef struct chaz_Lib chaz_Lib;
 
-chaz_SharedLib*
-chaz_SharedLib_new(const char *name, const char *version,
+chaz_Lib*
+chaz_Lib_new(const char *name, const char *version,
                    const char *major_version);
 
 void
-chaz_SharedLib_destroy(chaz_SharedLib *flags);
+chaz_Lib_destroy(chaz_Lib *flags);
 
 const char*
-chaz_SharedLib_get_name(chaz_SharedLib *lib);
+chaz_Lib_get_name(chaz_Lib *lib);
 
 const char*
-chaz_SharedLib_get_version(chaz_SharedLib *lib);
+chaz_Lib_get_version(chaz_Lib *lib);
 
 const char*
-chaz_SharedLib_get_major_version(chaz_SharedLib *lib);
+chaz_Lib_get_major_version(chaz_Lib *lib);
 
 char*
-chaz_SharedLib_filename(chaz_SharedLib *lib);
+chaz_Lib_filename(chaz_Lib *lib);
 
 char*
-chaz_SharedLib_major_version_filename(chaz_SharedLib *lib);
+chaz_Lib_major_version_filename(chaz_Lib *lib);
 
 char*
-chaz_SharedLib_no_version_filename(chaz_SharedLib *lib);
+chaz_Lib_no_version_filename(chaz_Lib *lib);
 
 char*
-chaz_SharedLib_implib_filename(chaz_SharedLib *lib);
+chaz_Lib_implib_filename(chaz_Lib *lib);
 
 char*
-chaz_SharedLib_export_filename(chaz_SharedLib *lib);
+chaz_Lib_export_filename(chaz_Lib *lib);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* H_CHAZ_SHARED_LIB */
+#endif /* H_CHAZ_LIB */
 
 

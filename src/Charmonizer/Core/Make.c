@@ -321,7 +321,7 @@ chaz_MakeFile_add_compiled_exe(chaz_MakeFile *makefile, const char *exe,
 }
 
 chaz_MakeRule*
-chaz_MakeFile_add_shared_lib(chaz_MakeFile *makefile, chaz_SharedLib *lib,
+chaz_MakeFile_add_shared_lib(chaz_MakeFile *makefile, chaz_Lib *lib,
                              const char *sources, chaz_CFlags *link_flags) {
     chaz_CFlags   *local_flags  = chaz_CC_new_cflags();
     const char    *link         = chaz_CC_link_command();
@@ -332,7 +332,7 @@ chaz_MakeFile_add_shared_lib(chaz_MakeFile *makefile, chaz_SharedLib *lib,
     char          *filename;
     char          *command;
 
-    filename = chaz_SharedLib_filename(lib);
+    filename = chaz_Lib_filename(lib);
     rule = chaz_MakeFile_add_rule(makefile, filename, sources);
 
     if (link_flags) {
@@ -346,7 +346,7 @@ chaz_MakeFile_add_shared_lib(chaz_MakeFile *makefile, chaz_SharedLib *lib,
     if (strcmp(shlib_ext, ".dylib") == 0) {
         /* Set temporary install name with full path on Darwin. */
         const char *dir_sep = chaz_OS_dir_sep();
-        char *major_v_name = chaz_SharedLib_major_version_filename(lib);
+        char *major_v_name = chaz_Lib_major_version_filename(lib);
         char *install_name = chaz_Util_join("", "-install_name $(CURDIR)",
                                             dir_sep, major_v_name, NULL);
         chaz_CFlags_append(local_flags, install_name);
@@ -366,8 +366,8 @@ chaz_MakeFile_add_shared_lib(chaz_MakeFile *makefile, chaz_SharedLib *lib,
 
     /* Add symlinks. */
     if (strcmp(shlib_ext, ".dll") != 0) {
-        char *major_v_name = chaz_SharedLib_major_version_filename(lib);
-        char *no_v_name    = chaz_SharedLib_no_version_filename(lib);
+        char *major_v_name = chaz_Lib_major_version_filename(lib);
+        char *no_v_name    = chaz_Lib_no_version_filename(lib);
 
         command = chaz_Util_join(" ", "ln -sf", filename, major_v_name, NULL);
         chaz_MakeRule_add_command(rule, command);
@@ -393,8 +393,8 @@ chaz_MakeFile_add_shared_lib(chaz_MakeFile *makefile, chaz_SharedLib *lib,
 
     if (chaz_CC_msvc_version_num()) {
         /* Remove import library and export file under MSVC. */
-        char *lib_filename = chaz_SharedLib_implib_filename(lib);
-        char *exp_filename = chaz_SharedLib_export_filename(lib);
+        char *lib_filename = chaz_Lib_implib_filename(lib);
+        char *exp_filename = chaz_Lib_export_filename(lib);
         chaz_MakeRule_add_rm_command(makefile->clean, lib_filename);
         chaz_MakeRule_add_rm_command(makefile->clean, exp_filename);
         free(lib_filename);

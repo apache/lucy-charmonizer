@@ -21,22 +21,22 @@
 #include "Charmonizer/Core/Util.h"
 #include "Charmonizer/Core/OperatingSystem.h"
 
-struct chaz_SharedLib {
+struct chaz_Lib {
     char *name;
     char *version;
     char *major_version;
 };
 
 static char*
-S_build_filename(chaz_SharedLib *lib, const char *version, const char *ext);
+S_build_filename(chaz_Lib *lib, const char *version, const char *ext);
 
 static const char*
 S_get_prefix(void);
 
-chaz_SharedLib*
-chaz_SharedLib_new(const char *name, const char *version,
+chaz_Lib*
+chaz_Lib_new(const char *name, const char *version,
                    const char *major_version) {
-    chaz_SharedLib *lib = (chaz_SharedLib*)malloc(sizeof(chaz_SharedLib));
+    chaz_Lib *lib = (chaz_Lib*)malloc(sizeof(chaz_Lib));
     lib->name          = chaz_Util_strdup(name);
     lib->version       = chaz_Util_strdup(version);
     lib->major_version = chaz_Util_strdup(major_version);
@@ -44,7 +44,7 @@ chaz_SharedLib_new(const char *name, const char *version,
 }
 
 void
-chaz_SharedLib_destroy(chaz_SharedLib *lib) {
+chaz_Lib_destroy(chaz_Lib *lib) {
     free(lib->name);
     free(lib->version);
     free(lib->major_version);
@@ -52,22 +52,22 @@ chaz_SharedLib_destroy(chaz_SharedLib *lib) {
 }
 
 const char*
-chaz_SharedLib_get_name(chaz_SharedLib *lib) {
+chaz_Lib_get_name(chaz_Lib *lib) {
     return lib->name;
 }
 
 const char*
-chaz_SharedLib_get_version(chaz_SharedLib *lib) {
+chaz_Lib_get_version(chaz_Lib *lib) {
     return lib->version;
 }
 
 const char*
-chaz_SharedLib_get_major_version(chaz_SharedLib *lib) {
+chaz_Lib_get_major_version(chaz_Lib *lib) {
     return lib->major_version;
 }
 
 char*
-chaz_SharedLib_filename(chaz_SharedLib *lib) {
+chaz_Lib_filename(chaz_Lib *lib) {
     const char *shlib_ext = chaz_OS_shared_lib_ext();
 
     if (strcmp(shlib_ext, ".dll") == 0) {
@@ -79,14 +79,14 @@ chaz_SharedLib_filename(chaz_SharedLib *lib) {
 }
 
 char*
-chaz_SharedLib_major_version_filename(chaz_SharedLib *lib) {
+chaz_Lib_major_version_filename(chaz_Lib *lib) {
     const char *shlib_ext = chaz_OS_shared_lib_ext();
 
     return S_build_filename(lib, lib->major_version, shlib_ext);
 }
 
 char*
-chaz_SharedLib_no_version_filename(chaz_SharedLib *lib) {
+chaz_Lib_no_version_filename(chaz_Lib *lib) {
     const char *prefix    = S_get_prefix();
     const char *shlib_ext = chaz_OS_shared_lib_ext();
 
@@ -94,17 +94,17 @@ chaz_SharedLib_no_version_filename(chaz_SharedLib *lib) {
 }
 
 char*
-chaz_SharedLib_implib_filename(chaz_SharedLib *lib) {
+chaz_Lib_implib_filename(chaz_Lib *lib) {
     return S_build_filename(lib, lib->major_version, ".lib");
 }
 
 char*
-chaz_SharedLib_export_filename(chaz_SharedLib *lib) {
+chaz_Lib_export_filename(chaz_Lib *lib) {
     return S_build_filename(lib, lib->major_version, ".exp");
 }
 
 static char*
-S_build_filename(chaz_SharedLib *lib, const char *version, const char *ext) {
+S_build_filename(chaz_Lib *lib, const char *version, const char *ext) {
     const char *prefix    = S_get_prefix();
     const char *shlib_ext = chaz_OS_shared_lib_ext();
 

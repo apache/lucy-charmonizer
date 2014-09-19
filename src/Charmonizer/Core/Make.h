@@ -148,7 +148,7 @@ chaz_MakeFile_add_compiled_exe(chaz_MakeFile *makefile, const char *exe,
  * @param link_flags Additional link flags.
  */
 chaz_MakeRule*
-chaz_MakeFile_add_shared_lib(chaz_MakeFile *makefile, chaz_SharedLib *lib,
+chaz_MakeFile_add_shared_lib(chaz_MakeFile *makefile, chaz_Lib *lib,
                              const char *sources, chaz_CFlags *link_flags);
 
 /** Add a rule to build the lemon parser generator.

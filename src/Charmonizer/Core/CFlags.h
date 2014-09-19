@@ -80,8 +80,7 @@ void
 chaz_CFlags_link_shared_library(chaz_CFlags *flags);
 
 void
-chaz_CFlags_set_shared_library_version(chaz_CFlags *flags,
-                                       chaz_SharedLib *lib);
+chaz_CFlags_set_shared_library_version(chaz_CFlags *flags, chaz_Lib *lib);
 
 void
 chaz_CFlags_set_link_output(chaz_CFlags *flags, const char *filename);
@@ -90,7 +89,7 @@ void
 chaz_CFlags_add_library_path(chaz_CFlags *flags, const char *directory);
 
 void
-chaz_CFlags_add_library(chaz_CFlags *flags, chaz_SharedLib *lib);
+chaz_CFlags_add_library(chaz_CFlags *flags, chaz_Lib *lib);
 
 void
 chaz_CFlags_add_external_library(chaz_CFlags *flags, const char *library);

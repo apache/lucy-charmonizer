@@ -272,20 +272,19 @@ chaz_CFlags_link_shared_library(chaz_CFlags *flags) {
 }
 
 void
-chaz_CFlags_set_shared_library_version(chaz_CFlags *flags,
-                                       chaz_SharedLib *lib) {
+chaz_CFlags_set_shared_library_version(chaz_CFlags *flags, chaz_Lib *lib) {
     if (flags->style == CHAZ_CFLAGS_STYLE_GNU) {
         const char *shlib_ext = chaz_OS_shared_lib_ext();
 
         if (strcmp(shlib_ext, ".dylib") == 0) {
-            const char *version = chaz_SharedLib_get_version(lib);
+            const char *version = chaz_Lib_get_version(lib);
             char *string
                 = chaz_Util_join(" ", "-current_version", version, NULL);
             chaz_CFlags_append(flags, string);
             free(string);
         }
         else if (strcmp(shlib_ext, ".so") == 0) {
-            char *soname = chaz_SharedLib_major_version_filename(lib);
+            char *soname = chaz_Lib_major_version_filename(lib);
             char *string = chaz_Util_join("", "-Wl,-soname,", soname, NULL);
             chaz_CFlags_append(flags, string);
             free(string);
@@ -293,7 +292,7 @@ chaz_CFlags_set_shared_library_version(chaz_CFlags *flags,
         }
     }
     else if (flags->style == CHAZ_CFLAGS_STYLE_SUN_C) {
-        char *soname = chaz_SharedLib_major_version_filename(lib);
+        char *soname = chaz_Lib_major_version_filename(lib);
         char *string = chaz_Util_join(" ", "-h", soname, NULL);
         chaz_CFlags_append(flags, string);
         free(string);
@@ -338,13 +337,13 @@ chaz_CFlags_add_library_path(chaz_CFlags *flags, const char *directory) {
 }
 
 void
-chaz_CFlags_add_library(chaz_CFlags *flags, chaz_SharedLib *lib) {
+chaz_CFlags_add_library(chaz_CFlags *flags, chaz_Lib *lib) {
     char *filename;
     if (flags->style == CHAZ_CFLAGS_STYLE_MSVC) {
-        filename = chaz_SharedLib_implib_filename(lib);
+        filename = chaz_Lib_implib_filename(lib);
     }
     else {
-        filename = chaz_SharedLib_filename(lib);
+        filename = chaz_Lib_filename(lib);
     }
     chaz_CFlags_append(flags, filename);
     free(filename);
