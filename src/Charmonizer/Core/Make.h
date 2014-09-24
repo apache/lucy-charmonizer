@@ -151,6 +151,17 @@ chaz_MakeRule*
 chaz_MakeFile_add_shared_lib(chaz_MakeFile *makefile, chaz_Lib *lib,
                              const char *sources, chaz_CFlags *link_flags);
 
+/** Add a rule to create a static library. The static library will also be added
+ * to the list of files to clean.
+ *
+ * @param makefile The makefile.
+ * @param lib The static library.
+ * @param objects The list of object files to be archived.
+ */
+chaz_MakeRule*
+chaz_MakeFile_add_static_lib(chaz_MakeFile *makefile, chaz_Lib *lib,
+                             const char *objects);
+
 /** Add a rule to build the lemon parser generator.
  *
  * @param makefile The makefile.
