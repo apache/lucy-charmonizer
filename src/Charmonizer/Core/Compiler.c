@@ -376,4 +376,26 @@ chaz_CC_link_command() {
     }
 }
 
+char*
+chaz_CC_format_archiver_command(const char *target, const char *objects) {
+    if (chaz_CC.intval__MSC_VER) {
+        /* TODO: Write `objects` to a temporary file in order to avoid
+         * exceeding line length limits. */
+        char *out = chaz_Util_join("", "/OUT:", target, NULL);
+        char *command = chaz_Util_join(" ", "lib", "/NOLOGO", out, NULL);
+        free(out);
+        return command;
+    }
+    else {
+        return chaz_Util_join(" ", "ar", "rcs", target, objects, NULL);
+    }
+}
+
+char*
+chaz_CC_format_ranlib_command(const char *target) {
+    if (chaz_CC.intval__MSC_VER) {
+        return NULL;
+    }
+    return chaz_Util_join(" ", "ranlib", target, NULL);
+}
 

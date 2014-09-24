@@ -111,6 +111,21 @@ chaz_CC_sun_c_version_num(void);
 const char*
 chaz_CC_link_command(void);
 
+/* Create a command for building a static library.
+ *
+ * @param target The target library filename.
+ * @param objects The list of object files to be archived in the library.
+ */
+char*
+chaz_CC_format_archiver_command(const char *target, const char *objects);
+
+/* Returns a "ranlib" command if valid.
+ *
+ * @param target The library filename.
+ */
+char*
+chaz_CC_format_ranlib_command(const char *target);
+
 #ifdef __cplusplus
 }
 #endif
