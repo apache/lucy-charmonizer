@@ -26,6 +26,7 @@
 #include "Charmonizer/Core/ConfWriterPython.h"
 #include "Charmonizer/Core/ConfWriterRuby.h"
 #include "Charmonizer/Core/Util.h"
+#include "Charmonizer/Core/CLI.h"
 #include "Charmonizer/Core/Compiler.h"
 #include "Charmonizer/Core/Make.h"
 #include "Charmonizer/Core/OperatingSystem.h"
@@ -35,93 +36,115 @@ chaz_Probe_parse_cli_args(int argc, const char *argv[],
                           struct chaz_CLIArgs *args) {
     int i;
     int output_enabled = 0;
+    chaz_CLI *cli
+        = chaz_CLI_new(argv[0], "charmonizer: Probe C compiler environment");
+    chaz_CLI_set_usage(cli, "Usage: charmonizer [OPTIONS] [-- [CFLAGS]]");
 
-    /* Zero out args struct. */
-    memset(args, 0, sizeof(struct chaz_CLIArgs));
+    /* Register Charmonizer-specific options. */
+    chaz_CLI_register(cli, "enable-c", "generate charmony.h", CHAZ_CLI_NO_ARG);
+    chaz_CLI_register(cli, "enable-perl", "generate Charmony.pm", CHAZ_CLI_NO_ARG);
+    chaz_CLI_register(cli, "enable-python", "generate charmony.py", CHAZ_CLI_NO_ARG);
+    chaz_CLI_register(cli, "enable-ruby", "generate charmony.rb", CHAZ_CLI_NO_ARG);
+    chaz_CLI_register(cli, "enable-makefile", NULL, CHAZ_CLI_NO_ARG);
+    chaz_CLI_register(cli, "enable-coverage", NULL, CHAZ_CLI_NO_ARG);
+    chaz_CLI_register(cli, "cc", "compiler command", CHAZ_CLI_ARG_REQUIRED);
+    chaz_CLI_register(cli, "cflags", NULL, CHAZ_CLI_ARG_REQUIRED);
+    chaz_CLI_register(cli, "verbosity", NULL, CHAZ_CLI_ARG_REQUIRED);
 
-    /* Parse most args. */
-    for (i = 1; i < argc; i++) {
-        const char *arg = argv[i];
-        if (strcmp(arg, "--") == 0) {
-            /* From here on out, everything will be a compiler flag. */
-            i++;
-            break;
-        }
-        if (strcmp(arg, "--enable-c") == 0) {
-            args->charmony_h = 1;
-            output_enabled = 1;
-        }
-        else if (strcmp(arg, "--enable-perl") == 0) {
-            args->charmony_pm = 1;
-            output_enabled = 1;
-        }
-        else if (strcmp(arg, "--enable-python") == 0) {
-            args->charmony_py = 1;
-            output_enabled = 1;
-        }
-        else if (strcmp(arg, "--enable-ruby") == 0) {
-            args->charmony_rb = 1;
-            output_enabled = 1;
-        }
-        else if (strcmp(arg, "--enable-makefile") == 0) {
-            args->write_makefile = 1;
-        }
-        else if (strcmp(arg, "--enable-coverage") == 0) {
-            args->code_coverage = 1;
-        }
-        else if (memcmp(arg, "--cc=", 5) == 0) {
-            size_t len = strlen(arg);
-            size_t l   = 5;
-            size_t r   = len;
-            size_t trimmed_len;
-
-            if (len > CHAZ_PROBE_MAX_CC_LEN - 5) {
-                fprintf(stderr, "Exceeded max length for compiler command");
-                exit(1);
-            }
-
-            /*
-             * Some Perl setups have a 'cc' config value with leading
-             * whitespace.
-             */
-            while (isspace(arg[l])) {
-                ++l;
-            }
-            while (r > l && isspace(arg[r-1])) {
-                --r;
-            }
-
-            trimmed_len = r - l;
-            memcpy(args->cc, arg + l, trimmed_len);
-            args->cc[trimmed_len] = '\0';
-        }
-    } /* preserve value of i */
+    /* Parse options, exiting on failure. */
+    if (!chaz_CLI_parse(cli, argc, argv)) {
+        fprintf(stderr, "%s", chaz_CLI_help(cli));
+        exit(1);
+    }
 
     /* Accumulate compiler flags. */
-    for (; i < argc; i++) {
-        const char *arg = argv[i];
-        size_t new_len = strlen(arg) + strlen(args->cflags) + 2;
-        if (new_len >= CHAZ_PROBE_MAX_CFLAGS_LEN) {
-            fprintf(stderr, "Exceeded max length for compiler flags");
-            exit(1);
+    {
+        char *cflags = chaz_Util_strdup("");
+        size_t cflags_len = 0;
+        for (i = 0; i < argc; i++) {
+            if (strcmp(argv[i], "--") == 0) {
+                i++;
+                break;
+            }
         }
-        strcat(args->cflags, " ");
-        strcat(args->cflags, arg);
+        for (; i < argc; i++) {
+            const char *arg = argv[i];
+            cflags_len += strlen(arg) + 2;
+            cflags = (char*)realloc(cflags, cflags_len);
+            strcat(cflags, " ");
+            strcat(cflags, arg);
+        }
+        chaz_CLI_set(cli, "cflags", cflags);
+        free(cflags);
+    }
+
+    /* Some Perl setups have a 'cc' config value with leading whitespace. */
+    if (chaz_CLI_defined(cli, "cc")) {
+        const char *arg = chaz_CLI_strval(cli, "cc");
+        char  *cc;
+        size_t len = strlen(arg);
+        size_t l   = 0;
+        size_t r   = len;
+        size_t trimmed_len;
+
+        while (isspace(arg[l])) {
+            ++l;
+        }
+        while (r > l && isspace(arg[r-1])) {
+            --r;
+        }
+
+        trimmed_len = r - l;
+        cc = (char*)malloc(trimmed_len + 1);
+        memcpy(cc, arg + l, trimmed_len);
+        cc[trimmed_len] = '\0';
+        chaz_CLI_unset(cli, "cc");
+        chaz_CLI_set(cli, "cc", cc);
+        free(cc);
     }
 
     /* Process CHARM_VERBOSITY environment variable. */
     {
         const char *verbosity_env = getenv("CHARM_VERBOSITY");
         if (verbosity_env && strlen(verbosity_env)) {
-            args->verbosity = strtol(verbosity_env, NULL, 10);
+            chaz_CLI_set(cli, "verbosity", verbosity_env);
         }
     }
 
+    if (chaz_CLI_defined(cli, "enable-c")
+        || chaz_CLI_defined(cli, "enable-perl")
+        || chaz_CLI_defined(cli, "enable-python")
+        || chaz_CLI_defined(cli, "enable-ruby")
+       ) {
+        output_enabled = 1;
+    }
+
     /* Validate. */
-    if (!strlen(args->cc) || !output_enabled) {
+    if (!chaz_CLI_defined(cli, "cc")
+        || !strlen(chaz_CLI_strval(cli, "cc"))
+        || !output_enabled
+       ) {
         return false;
     }
 
+    /* Zero out args struct. */
+    memset(args, 0, sizeof(struct chaz_CLIArgs));
+
+    /* Copy to CLIArgs struct.  TODO: This code will be going away shortly. */
+    args->charmony_h     = chaz_CLI_defined(cli, "enable-c");
+    args->charmony_pm    = chaz_CLI_defined(cli, "enable-perl");
+    args->charmony_py    = chaz_CLI_defined(cli, "enable-python");
+    args->charmony_rb    = chaz_CLI_defined(cli, "enable-ruby");
+    args->write_makefile = chaz_CLI_defined(cli, "enable-makefile");
+    args->code_coverage  = chaz_CLI_defined(cli, "enable-coverage");
+    if (chaz_CLI_defined(cli, "cc")) {
+        strcpy(args->cc, chaz_CLI_strval(cli, "cc"));
+    }
+    if (chaz_CLI_defined(cli, "verbosity")) {
+        args->verbosity = (int)chaz_CLI_longval(cli, "verbosity");
+    }
+
+    chaz_CLI_destroy(cli);
     return true;
 }
 
