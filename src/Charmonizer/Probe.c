@@ -45,7 +45,6 @@ chaz_Probe_parse_cli_args(int argc, const char *argv[], chaz_CLI *cli) {
     chaz_CLI_register(cli, "enable-coverage", NULL, CHAZ_CLI_NO_ARG);
     chaz_CLI_register(cli, "cc", "compiler command", CHAZ_CLI_ARG_REQUIRED);
     chaz_CLI_register(cli, "cflags", NULL, CHAZ_CLI_ARG_REQUIRED);
-    chaz_CLI_register(cli, "verbosity", NULL, CHAZ_CLI_ARG_REQUIRED);
 
     /* Parse options, exiting on failure. */
     if (!chaz_CLI_parse(cli, argc, argv)) {
@@ -99,26 +98,9 @@ chaz_Probe_parse_cli_args(int argc, const char *argv[], chaz_CLI *cli) {
         free(cc);
     }
 
-    /* Process CHARM_VERBOSITY environment variable. */
-    {
-        const char *verbosity_env = getenv("CHARM_VERBOSITY");
-        if (verbosity_env && strlen(verbosity_env)) {
-            chaz_CLI_set(cli, "verbosity", verbosity_env);
-        }
-    }
-
-    if (chaz_CLI_defined(cli, "enable-c")
-        || chaz_CLI_defined(cli, "enable-perl")
-        || chaz_CLI_defined(cli, "enable-python")
-        || chaz_CLI_defined(cli, "enable-ruby")
-       ) {
-        output_enabled = 1;
-    }
-
     /* Validate. */
     if (!chaz_CLI_defined(cli, "cc")
         || !strlen(chaz_CLI_strval(cli, "cc"))
-        || !output_enabled
        ) {
         return false;
     }
