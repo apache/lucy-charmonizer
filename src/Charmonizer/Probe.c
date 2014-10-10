@@ -32,13 +32,9 @@
 #include "Charmonizer/Core/OperatingSystem.h"
 
 int
-chaz_Probe_parse_cli_args(int argc, const char *argv[],
-                          struct chaz_CLIArgs *args) {
+chaz_Probe_parse_cli_args(int argc, const char *argv[], chaz_CLI *cli) {
     int i;
     int output_enabled = 0;
-    chaz_CLI *cli
-        = chaz_CLI_new(argv[0], "charmonizer: Probe C compiler environment");
-    chaz_CLI_set_usage(cli, "Usage: charmonizer [OPTIONS] [-- [CFLAGS]]");
 
     /* Register Charmonizer-specific options. */
     chaz_CLI_register(cli, "enable-c", "generate charmony.h", CHAZ_CLI_NO_ARG);
@@ -127,24 +123,6 @@ chaz_Probe_parse_cli_args(int argc, const char *argv[],
         return false;
     }
 
-    /* Zero out args struct. */
-    memset(args, 0, sizeof(struct chaz_CLIArgs));
-
-    /* Copy to CLIArgs struct.  TODO: This code will be going away shortly. */
-    args->charmony_h     = chaz_CLI_defined(cli, "enable-c");
-    args->charmony_pm    = chaz_CLI_defined(cli, "enable-perl");
-    args->charmony_py    = chaz_CLI_defined(cli, "enable-python");
-    args->charmony_rb    = chaz_CLI_defined(cli, "enable-ruby");
-    args->write_makefile = chaz_CLI_defined(cli, "enable-makefile");
-    args->code_coverage  = chaz_CLI_defined(cli, "enable-coverage");
-    if (chaz_CLI_defined(cli, "cc")) {
-        strcpy(args->cc, chaz_CLI_strval(cli, "cc"));
-    }
-    if (chaz_CLI_defined(cli, "verbosity")) {
-        args->verbosity = (int)chaz_CLI_longval(cli, "verbosity");
-    }
-
-    chaz_CLI_destroy(cli);
     return true;
 }
 
@@ -157,7 +135,7 @@ chaz_Probe_die_usage(void) {
 }
 
 void
-chaz_Probe_init(struct chaz_CLIArgs *args) {
+chaz_Probe_init(struct chaz_CLI *cli) {
     int output_enabled = 0;
 
     {
@@ -170,25 +148,25 @@ chaz_Probe_init(struct chaz_CLIArgs *args) {
 
     /* Dispatch other initializers. */
     chaz_OS_init();
-    chaz_CC_init(args->cc, args->cflags);
+    chaz_CC_init(chaz_CLI_strval(cli, "cc"), chaz_CLI_strval(cli, "cflags"));
     chaz_ConfWriter_init();
     chaz_HeadCheck_init();
     chaz_Make_init();
 
     /* Enable output. */
-    if (args->charmony_h) {
+    if (chaz_CLI_defined(cli, "enable-c")) {
         chaz_ConfWriterC_enable();
         output_enabled = true;
     }
-    if (args->charmony_pm) {
+    if (chaz_CLI_defined(cli, "enable-perl")) {
         chaz_ConfWriterPerl_enable();
         output_enabled = true;
     }
-    if (args->charmony_py) {
+    if (chaz_CLI_defined(cli, "enable-python")) {
         chaz_ConfWriterPython_enable();
         output_enabled = true;
     }
-    if (args->charmony_rb) {
+    if (chaz_CLI_defined(cli, "enable-ruby")) {
         chaz_ConfWriterRuby_enable();
         output_enabled = true;
     }

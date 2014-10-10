@@ -24,20 +24,7 @@ extern "C" {
 #include <stddef.h>
 #include <stdio.h>
 
-#define CHAZ_PROBE_MAX_CC_LEN 100
-#define CHAZ_PROBE_MAX_CFLAGS_LEN 2000
-
-struct chaz_CLIArgs {
-    char cc[CHAZ_PROBE_MAX_CC_LEN + 1];
-    char cflags[CHAZ_PROBE_MAX_CFLAGS_LEN + 1];
-    int  charmony_h;
-    int  charmony_pm;
-    int  charmony_py;
-    int  charmony_rb;
-    int  verbosity;
-    int  write_makefile;
-    int  code_coverage;
-};
+struct chaz_CLI;
 
 /* Parse command line arguments, initializing and filling in the supplied
  * `args` struct.
@@ -54,7 +41,7 @@ struct chaz_CLIArgs {
  */
 int
 chaz_Probe_parse_cli_args(int argc, const char *argv[],
-                          struct chaz_CLIArgs *args);
+                          struct chaz_CLI *cli);
 
 /* Exit after printing usage instructions to stderr.
  */
@@ -71,7 +58,7 @@ chaz_Probe_die_usage(void);
  *      2 - debugging
  */
 void
-chaz_Probe_init(struct chaz_CLIArgs *args);
+chaz_Probe_init(struct chaz_CLI *cli);
 
 /* Clean up the Charmonizer environment -- deleting tempfiles, etc.  This
  * should be called only after everything else finishes.
