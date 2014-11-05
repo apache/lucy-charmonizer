@@ -16,7 +16,7 @@
 # limitations under the License.
 
 CC= cc
-DEFS=
+DEFS= -D_LARGEFILE64_SOURCE
 CFLAGS= -I. -Isrc $(DEFS) 
 PROGNAME= charmonize
 CHARMONY_H= charmony.h
