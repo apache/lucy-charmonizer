@@ -46,6 +46,8 @@ meld:
 $(CHARMONY_H): $(PROGNAME)
 	./$(PROGNAME) --cc=$(CC) --enable-c
 
+valgrind: $(PROGNAME)
+	valgrind --leak-check=full ./$(PROGNAME) --cc=$(CC) --enable-c
 
 $(PROGNAME): $(OBJS)
 	$(CC) $(CFLAGS) $(OBJS) -o $(PROGNAME)
