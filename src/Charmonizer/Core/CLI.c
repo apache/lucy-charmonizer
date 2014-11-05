@@ -159,6 +159,7 @@ chaz_CLI_destroy(chaz_CLI *self) {
     free(self->opts);
     free(self->usage);
     free(self->help);
+    free(self);
 }
 
 void
@@ -352,6 +353,7 @@ chaz_CLI_parse(chaz_CLI *self, int argc, const char *argv[]) {
         }
     }
 
+    free(name);
     return 1;
 }
 
