@@ -14,29 +14,19 @@
  * limitations under the License.
  */
 
-#define CHAZ_USE_SHORT_NAMES
-
-#include "charmony.h"
 #include "Charmonizer/Test.h"
 
-static void
-S_run_tests(void) {
-#ifdef UNUSED_VAR
-    PASS("UNUSED_VAR macro is defined");
-#else
-    FAIL("UNUSED_VAR macro is defined");
-#endif
+int
+main() {
+    int success =
+        chaz_Test_test_dir_manip() &&
+        chaz_Test_test_func_macro() &&
+        chaz_Test_test_headers() &&
+        chaz_Test_test_integers() &&
+        chaz_Test_test_large_files() &&
+        chaz_Test_test_unused_vars() &&
+        chaz_Test_test_variadic_macros();
 
-#ifdef UNREACHABLE_RETURN
-    PASS("UNREACHABLE_RETURN macro is defined");
-#else
-    FAIL("UNREACHABLE_RETURN macro is defined");
-#endif
-}
-
-int main(int argc, char **argv) {
-    Test_start(2);
-    S_run_tests();
-    return !Test_finish();
+    return success ? 0 : 1;
 }
 

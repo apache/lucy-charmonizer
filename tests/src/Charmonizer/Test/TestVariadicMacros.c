@@ -61,9 +61,10 @@ S_run_tests(void) {
     OK(really_has_var_macs, "either ISO or GNUC");
 }
 
-int main(int argc, char **argv) {
+int
+chaz_Test_test_variadic_macros() {
     Test_start(4);
     S_run_tests();
-    return !Test_finish();
+    return Test_finish();
 }
 

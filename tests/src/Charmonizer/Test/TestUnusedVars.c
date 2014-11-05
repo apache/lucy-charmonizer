@@ -17,47 +17,27 @@
 #define CHAZ_USE_SHORT_NAMES
 
 #include "charmony.h"
-#include <string.h>
 #include "Charmonizer/Test.h"
-
-#ifdef INLINE
-static INLINE const char* S_inline_function() {
-    return "inline works";
-}
-#endif
 
 static void
 S_run_tests(void) {
-
-#ifdef HAS_FUNC_MACRO
-    STR_EQ(FUNC_MACRO, "S_run_tests", "FUNC_MACRO");
+#ifdef UNUSED_VAR
+    PASS("UNUSED_VAR macro is defined");
 #else
-    SKIP("no FUNC_MACRO");
+    FAIL("UNUSED_VAR macro is defined");
 #endif
 
-#ifdef HAS_ISO_FUNC_MACRO
-    STR_EQ(__func__, "S_run_tests", "HAS_ISO_FUNC_MACRO");
+#ifdef UNREACHABLE_RETURN
+    PASS("UNREACHABLE_RETURN macro is defined");
 #else
-    SKIP("no ISO_FUNC_MACRO");
-#endif
-
-#ifdef HAS_GNUC_FUNC_MACRO
-    STR_EQ(__FUNCTION__, "S_run_tests", "HAS_GNUC_FUNC_MACRO");
-#else
-    SKIP("no GNUC_FUNC_MACRO");
-#endif
-
-#ifdef INLINE
-    PASS(S_inline_function());
-#else
-    SKIP("no INLINE functions");
+    FAIL("UNREACHABLE_RETURN macro is defined");
 #endif
 }
 
-
-int main(int argc, char **argv) {
-    Test_start(4);
+int
+chaz_Test_test_unused_vars() {
+    Test_start(2);
     S_run_tests();
-    return !Test_finish();
+    return Test_finish();
 }
 

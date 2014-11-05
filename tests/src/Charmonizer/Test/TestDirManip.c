@@ -63,9 +63,10 @@ S_run_tests(void) {
 #endif
 }
 
-int main(int argc, char **argv) {
+int
+chaz_Test_test_dir_manip() {
     Test_start(6);
     S_run_tests();
-    return !Test_finish();
+    return Test_finish();
 }
 

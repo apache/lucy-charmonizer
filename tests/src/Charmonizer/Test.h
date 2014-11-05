@@ -24,9 +24,29 @@
 extern "C" {
 #endif
 
-#include "Charmonizer/Core/Defines.h"
+#ifndef true
+  #define true 1
+  #define false 0
+#endif
 
 typedef struct chaz_TestBatch chaz_TestBatch;
+
+/* Test functions.
+ */
+int
+chaz_Test_test_dir_manip(void);
+int
+chaz_Test_test_func_macro(void);
+int
+chaz_Test_test_headers(void);
+int
+chaz_Test_test_integers(void);
+int
+chaz_Test_test_large_files(void);
+int
+chaz_Test_test_unused_vars(void);
+int
+chaz_Test_test_variadic_macros(void);
 
 /* Begin a test run.
  */

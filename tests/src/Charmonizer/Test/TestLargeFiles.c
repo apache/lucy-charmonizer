@@ -273,9 +273,10 @@ S_can_create_big_files(void) {
 
 #endif /* STAT_TESTS_ENABLED */
 
-int main(int argc, char **argv) {
+int
+chaz_Test_test_large_files() {
     Test_start(20);
     S_run_tests();
-    return !Test_finish();
+    return Test_finish();
 }
 

@@ -119,9 +119,10 @@ S_run_tests(TestBatch *batch) {
 #endif
 }
 
-int main(int argc, char **argv) {
+int
+chaz_Test_test_integers() {
     TestBatch *batch = Test_start(39);
     S_run_tests(batch);
-    return !Test_finish();
+    return Test_finish();
 }
 

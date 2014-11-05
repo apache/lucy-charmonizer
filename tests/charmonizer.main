@@ -1,0 +1,235 @@
+/* Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/* Source fragment for the Charmonizer tests' charmonizer.c.
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "Charmonizer/Probe.h"
+#include "Charmonizer/Probe/AtomicOps.h"
+#include "Charmonizer/Probe/DirManip.h"
+#include "Charmonizer/Probe/Floats.h"
+#include "Charmonizer/Probe/FuncMacro.h"
+#include "Charmonizer/Probe/Headers.h"
+#include "Charmonizer/Probe/Booleans.h"
+#include "Charmonizer/Probe/Integers.h"
+#include "Charmonizer/Probe/LargeFiles.h"
+#include "Charmonizer/Probe/Memory.h"
+#include "Charmonizer/Probe/SymbolVisibility.h"
+#include "Charmonizer/Probe/UnusedVars.h"
+#include "Charmonizer/Probe/VariadicMacros.h"
+#include "Charmonizer/Core/CLI.h"
+#include "Charmonizer/Core/Compiler.h"
+#include "Charmonizer/Core/ConfWriter.h"
+#include "Charmonizer/Core/ConfWriterC.h"
+#include "Charmonizer/Core/ConfWriterPerl.h"
+#include "Charmonizer/Core/ConfWriterRuby.h"
+#include "Charmonizer/Core/HeaderChecker.h"
+#include "Charmonizer/Core/Make.h"
+#include "Charmonizer/Core/OperatingSystem.h"
+#include "Charmonizer/Core/Util.h"
+
+typedef struct SourceFileContext {
+    chaz_MakeVar *var;
+} SourceFileContext;
+
+static const char chaztest_version[]       = "0.1.0";
+static const char chaztest_major_version[] = "0.1";
+
+static void
+S_write_makefile(void);
+
+static void
+S_c_file_callback(const char *dir, char *file, void *context);
+
+static int
+S_ends_with(const char *string, const char *postfix);
+
+int main(int argc, const char **argv) {
+    /* Initialize. */
+    {
+        chaz_CLI *cli = chaz_CLI_new(argv[0], NULL);
+        int result = chaz_Probe_parse_cli_args(argc, argv, cli);
+        if (!result) {
+            fprintf(stderr, "%s", chaz_CLI_help(cli));
+            exit(1);
+        }
+        chaz_Probe_init(cli);
+        chaz_CLI_destroy(cli);
+    }
+
+    /* Run probe modules. */
+    chaz_DirManip_run();
+    chaz_Headers_run();
+    chaz_AtomicOps_run();
+    chaz_FuncMacro_run();
+    chaz_Booleans_run();
+    chaz_Integers_run();
+    chaz_Floats_run();
+    chaz_LargeFiles_run();
+    chaz_Memory_run();
+    chaz_SymbolVisibility_run();
+    chaz_UnusedVars_run();
+    chaz_VariadicMacros_run();
+
+    /* Create Makefile. */
+    S_write_makefile();
+
+    /* Write custom postamble. */
+    chaz_ConfWriter_append_conf(
+        "#ifdef CHY_HAS_SYS_TYPES_H\n"
+        "  #include <sys/types.h>\n"
+        "#endif\n\n"
+    );
+    chaz_ConfWriter_append_conf(
+        "#ifdef CHY_HAS_ALLOCA_H\n"
+        "  #include <alloca.h>\n"
+        "#elif defined(CHY_HAS_MALLOC_H)\n"
+        "  #include <malloc.h>\n"
+        "#elif defined(CHY_ALLOCA_IN_STDLIB_H)\n"
+        "  #include <stdlib.h>\n"
+        "#endif\n\n"
+    );
+    chaz_ConfWriter_append_conf(
+        "#ifdef CHY_HAS_WINDOWS_H\n"
+        "  /* Target Windows XP. */\n"
+        "  #ifndef WINVER\n"
+        "    #define WINVER 0x0500\n"
+        "  #endif\n"
+        "  #ifndef _WIN32_WINNT\n"
+        "    #define _WIN32_WINNT 0x0500\n"
+        "  #endif\n"
+        "#endif\n\n"
+    );
+
+    /* Clean up. */
+    chaz_Probe_clean_up();
+
+    return 0;
+}
+
+static void
+S_write_makefile() {
+    SourceFileContext sfc;
+
+    chaz_MakeFile *makefile;
+    chaz_MakeVar  *var;
+    chaz_MakeRule *rule;
+    chaz_Lib      *shared_lib;
+    chaz_CFlags   *cflags;
+
+    const char *dir_sep = chaz_OS_dir_sep();
+    const char *exe_ext = chaz_OS_exe_ext();
+
+    char *shared_lib_filename;
+    char *test_exe;
+    char *scratch;
+
+    makefile = chaz_MakeFile_new();
+
+    /* Compiler flags. */
+    cflags = chaz_CC_new_cflags();
+    if (chaz_Probe_gcc_version_num()) {
+        chaz_CFlags_add_define(cflags, "_LARGEFILE64_SOURCE", NULL);
+    }
+    chaz_CFlags_add_include_dir(cflags, ".");
+    chaz_CFlags_add_include_dir(cflags, "src");
+    var = chaz_MakeFile_add_var(makefile, "CFLAGS", NULL);
+    chaz_MakeVar_append(var, chaz_CFlags_get_string(cflags));
+    chaz_MakeVar_append(var, chaz_CC_get_cflags());
+    chaz_CFlags_destroy(cflags);
+
+    /* Object files. */
+    sfc.var = chaz_MakeFile_add_var(makefile, "OBJECTS", NULL);
+    chaz_Make_list_files("src", "c", S_c_file_callback, &sfc);
+
+    /* Shared library. */
+    shared_lib = chaz_Lib_new("chaztest", chaz_Lib_SHARED, chaztest_version,
+                              chaztest_major_version);
+    shared_lib_filename = chaz_Lib_filename(shared_lib);
+
+    /* 'all' target. */
+    chaz_MakeFile_add_rule(makefile, "all", shared_lib_filename);
+
+    /* Rule for shared library. */
+    chaz_MakeFile_add_shared_lib(makefile, shared_lib, "$(OBJECTS)", NULL);
+
+    /* Rule for test executable. */
+    test_exe = chaz_Util_join("", "tests", dir_sep, "test", exe_ext, NULL);
+    scratch = chaz_Util_join(dir_sep, "tests", "test.c", NULL);
+    cflags = chaz_CC_new_cflags();
+    chaz_CFlags_add_include_dir(cflags, "src");
+    chaz_CFlags_add_library(cflags, shared_lib);
+    rule = chaz_MakeFile_add_compiled_exe(makefile, test_exe, scratch, cflags);
+    chaz_MakeRule_add_prereq(rule, shared_lib_filename);
+    free(scratch);
+    chaz_CFlags_destroy(cflags);
+
+    /* 'test' target. */
+    rule = chaz_MakeFile_add_rule(makefile, "test", test_exe);
+    if (strcmp(chaz_OS_shared_lib_ext(), ".so") == 0) {
+        scratch = chaz_Util_join(" ", "LD_LIBRARY_PATH=.", test_exe, NULL);
+    }
+    else {
+        scratch = chaz_Util_strdup(test_exe);
+    }
+    chaz_MakeRule_add_command(rule, scratch);
+    free(scratch);
+
+    /* 'clean' target. */
+    rule = chaz_MakeFile_clean_rule(makefile);
+    chaz_MakeRule_add_rm_command(rule, "$(OBJECTS)");
+
+    /* Write Makefile. */
+    chaz_MakeFile_write(makefile);
+
+    /* Clean up. */
+    chaz_Lib_destroy(shared_lib);
+    chaz_MakeFile_destroy(makefile);
+    free(shared_lib_filename);
+    free(test_exe);
+}
+
+static void
+S_c_file_callback(const char *dir, char *file, void *context) {
+    SourceFileContext *sfc = (SourceFileContext*)context;
+    const char *dir_sep = chaz_OS_dir_sep();
+    const char *obj_ext = chaz_CC_obj_ext();
+    size_t file_len = strlen(file);
+    char *obj_file;
+
+    /* Strip extension */
+    if (!S_ends_with(file, ".c")) {
+        chaz_Util_die("Unexpected C filename: %s", file);
+    }
+    file[file_len-2] = '\0';
+
+    obj_file = chaz_Util_join("", "src", dir_sep, file, obj_ext, NULL);
+    chaz_MakeVar_append(sfc->var, obj_file);
+    free(obj_file);
+}
+
+static int
+S_ends_with(const char *string, const char *postfix) {
+    size_t len         = strlen(string);
+    size_t postfix_len = strlen(postfix);
+    return len >= postfix_len
+           && memcmp(string + len - postfix_len, postfix, postfix_len) == 0;
+}
+
+
