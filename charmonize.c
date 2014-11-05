@@ -46,7 +46,7 @@ int main(int argc, const char **argv) {
         chaz_CLI *cli = chaz_CLI_new(argv[0], NULL);
         int result = chaz_Probe_parse_cli_args(argc, argv, cli);
         if (!result) {
-            fprintf(stderr, chaz_CLI_help(cli));
+            fprintf(stderr, "%s", chaz_CLI_help(cli));
             exit(1);
         }
         chaz_Probe_init(cli);
