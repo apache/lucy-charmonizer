@@ -35,9 +35,11 @@ typedef void (*chaz_Make_list_files_callback_t)(const char *dir, char *file,
                                                 void *context);
 
 /** Initialize the environment.
+ *
+ * @param make_command Name of the make command. Auto-detect if NULL.
  */
 void
-chaz_Make_init(void);
+chaz_Make_init(const char *make_command);
 
 /** Clean up the environment.
  */

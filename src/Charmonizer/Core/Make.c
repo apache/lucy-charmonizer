@@ -79,15 +79,17 @@ static void
 S_write_rule(chaz_MakeRule *rule, FILE *out);
 
 void
-chaz_Make_init(void) {
-    const char *make;
+chaz_Make_init(const char *make_command) {
+    if (make_command) {
+        chaz_Make.make_command = chaz_Util_strdup(make_command);
+    }
+    else {
+        chaz_Make_detect("make", "gmake", "nmake", "dmake", "mingw32-make",
+                         "mingw64-make", NULL);
+    }
 
-    chaz_Make_detect("make", "gmake", "nmake", "dmake", "mingw32-make",
-                     "mingw64-make", NULL);
-    make = chaz_Make.make_command;
-
-    if (make) {
-        if (strcmp(make, "nmake") == 0) {
+    if (chaz_Make.make_command) {
+        if (strcmp(chaz_Make.make_command, "nmake") == 0) {
             chaz_Make.shell_type = CHAZ_OS_CMD_EXE;
         }
         else {

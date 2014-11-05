@@ -45,6 +45,7 @@ chaz_Probe_parse_cli_args(int argc, const char *argv[], chaz_CLI *cli) {
     chaz_CLI_register(cli, "enable-coverage", NULL, CHAZ_CLI_NO_ARG);
     chaz_CLI_register(cli, "cc", "compiler command", CHAZ_CLI_ARG_REQUIRED);
     chaz_CLI_register(cli, "cflags", NULL, CHAZ_CLI_ARG_REQUIRED);
+    chaz_CLI_register(cli, "make", "make command", 0);
 
     /* Parse options, exiting on failure. */
     if (!chaz_CLI_parse(cli, argc, argv)) {
@@ -133,7 +134,7 @@ chaz_Probe_init(struct chaz_CLI *cli) {
     chaz_CC_init(chaz_CLI_strval(cli, "cc"), chaz_CLI_strval(cli, "cflags"));
     chaz_ConfWriter_init();
     chaz_HeadCheck_init();
-    chaz_Make_init();
+    chaz_Make_init(chaz_CLI_strval(cli, "make"));
 
     /* Enable output. */
     if (chaz_CLI_defined(cli, "enable-c")) {
