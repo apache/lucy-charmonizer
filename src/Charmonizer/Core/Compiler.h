@@ -48,6 +48,12 @@ chaz_CC_compile_obj(const char *source_path, const char *obj_path,
 int
 chaz_CC_test_compile(const char *source);
 
+/* Attempt to compile and link the supplied source code and return true if
+ * the effort succeeds.
+ */
+int
+chaz_CC_test_link(const char *source);
+
 /* Attempt to compile the supplied source code.  If successful, capture the
  * output of the program and return a pointer to a newly allocated buffer.
  * If the compilation fails, return NULL.  The length of the captured

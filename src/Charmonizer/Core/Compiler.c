@@ -280,6 +280,18 @@ chaz_CC_test_compile(const char *source) {
     return compile_succeeded;
 }
 
+int
+chaz_CC_test_link(const char *source) {
+    int link_succeeded;
+    if (!chaz_Util_remove_and_verify(chaz_CC.try_exe_name)) {
+        chaz_Util_die("Failed to delete file '%s'", chaz_CC.try_exe_name);
+    }
+    link_succeeded = chaz_CC_compile_exe(CHAZ_CC_TRY_SOURCE_PATH,
+                                         CHAZ_CC_TRY_BASENAME, source);
+    chaz_Util_remove_and_verify(chaz_CC.try_exe_name);
+    return link_succeeded;
+}
+
 char*
 chaz_CC_capture_output(const char *source, size_t *output_len) {
     char *captured_output = NULL;
