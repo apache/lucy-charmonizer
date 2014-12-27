@@ -96,7 +96,7 @@ S_chaz_CLI_rebuild_help(chaz_CLI *self) {
     }
     strcat(self->help, "\n");
     if (self->num_opts) {
-        strcat(self->help, "\nOptional arguments:\n");
+        strcat(self->help, "\nArguments:\n");
         for (i = 0; i < self->num_opts; i++) {
             chaz_CLIOption *opt = &self->opts[i];
             size_t line_start = strlen(self->help);
@@ -115,7 +115,7 @@ S_chaz_CLI_rebuild_help(chaz_CLI *self) {
                     self->help[current_len++] = toupper(opt->name[j]);
                 }
                 if (opt->flags & CHAZ_CLI_ARG_OPTIONAL) {
-                    strcat(self->help, "]");
+                    self->help[current_len++] = ']';
                 }
                 self->help[current_len] = '\0';
             }
