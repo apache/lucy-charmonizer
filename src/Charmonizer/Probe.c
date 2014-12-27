@@ -44,7 +44,7 @@ chaz_Probe_parse_cli_args(int argc, const char *argv[], chaz_CLI *cli) {
     chaz_CLI_register(cli, "enable-makefile", NULL, CHAZ_CLI_NO_ARG);
     chaz_CLI_register(cli, "enable-coverage", NULL, CHAZ_CLI_NO_ARG);
     chaz_CLI_register(cli, "cc", "compiler command", CHAZ_CLI_ARG_REQUIRED);
-    chaz_CLI_register(cli, "cflags", NULL, CHAZ_CLI_ARG_REQUIRED);
+    chaz_CLI_register(cli, "cflags", NULL, CHAZ_CLI_ARG_OPTIONAL);
     chaz_CLI_register(cli, "make", "make command", 0);
 
     /* Parse options, exiting on failure. */
