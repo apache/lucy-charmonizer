@@ -354,6 +354,15 @@ chaz_CLI_parse(chaz_CLI *self, int argc, const char *argv[]) {
     }
 
     free(name);
+
+    for (i = 0; i < self->num_opts; i++) {
+        chaz_CLIOption *opt = &self->opts[i];
+        if (!opt->defined && (opt->flags & CHAZ_CLI_ARG_REQUIRED)) {
+            S_chaz_CLI_error(self, "Option '%s' is required", opt->name);
+            return 0;
+        }
+    }
+
     return 1;
 }
 
