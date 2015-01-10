@@ -44,6 +44,10 @@ chaz_HeadCheck_check_header(const char *header_name);
 int
 chaz_HeadCheck_check_many_headers(const char **header_names);
 
+/* Return true if the symbol is defined (possibly as a macro). */
+int
+chaz_HeadCheck_defines_symbol(const char *symbol, const char *includes);
+
 /* Return true if the member is present in the struct. */
 int
 chaz_HeadCheck_contains_member(const char *struct_name, const char *member,
