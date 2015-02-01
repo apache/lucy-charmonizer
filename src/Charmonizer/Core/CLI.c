@@ -345,6 +345,21 @@ chaz_CLI_parse(chaz_CLI *self, int argc, const char *argv[]) {
         memcpy(name, arg + 2, name_len);
         name[name_len] = '\0';
 
+        if (value == NULL && i + 1 < argc) {
+            /* Support both '--opt=val' and '--opt val' styles. */
+            chaz_CLIOption *opt = S_find_opt(self, name);
+            if (opt == NULL) {
+                S_chaz_CLI_error(self, "Attempt to set unknown option: '%s'",
+                                 name);
+                free(name);
+                return 0;
+            }
+            if (opt->flags != CHAZ_CLI_NO_ARG) {
+                i++;
+                value = argv[i];
+            }
+        }
+
         /* Attempt to set the option. */
         if (!chaz_CLI_set(self, name, value)) {
             free(name);
