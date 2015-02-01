@@ -38,7 +38,7 @@ static struct {
     char shared_lib_ext[7];
     char local_command_start[3];
     int  shell_type;
-} chaz_OS = { "", "", "", "", "", "", 0 };
+} chaz_OS = { "", "", "", "", "", "", "", 0 };
 
 void
 chaz_OS_init(void) {
