@@ -133,6 +133,18 @@ S_chaz_CLI_rebuild_help(chaz_CLI *self) {
     strcat(self->help, "\n");
 }
 
+static chaz_CLIOption*
+S_find_opt(chaz_CLI *self, const char *name) {
+    int i;
+    for (i = 0; i < self->num_opts; i++) {
+        chaz_CLIOption *opt = &self->opts[i];
+        if (strcmp(opt->name, name) == 0) {
+            return opt;
+        }
+    }
+    return NULL;
+}
+
 chaz_CLI*
 chaz_CLI_new(const char *name, const char *description) {
     chaz_CLI *self  = calloc(1, sizeof(chaz_CLI));
@@ -218,81 +230,68 @@ chaz_CLI_register(chaz_CLI *self, const char *name, const char *help,
 
 int
 chaz_CLI_set(chaz_CLI *self, const char *name, const char *value) {
-    int i;
-    for (i = 0; i < self->num_opts; i++) {
-        chaz_CLIOption *opt = &self->opts[i];
-        if (strcmp(opt->name, name) == 0) {
-            if (opt->defined) {
-                S_chaz_CLI_error(self, "'%s' specified multiple times", name);
-                return 0;
-            }
-            opt->defined = 1;
-            if (value != NULL) {
-                opt->value = chaz_Util_strdup(value);
-            }
-            return 1;
-        }
+    chaz_CLIOption *opt = S_find_opt(self, name);
+    if (opt == NULL) {
+        S_chaz_CLI_error(self, "Attempt to set unknown option: '%s'", name);
+        return 0;
     }
-    S_chaz_CLI_error(self, "Attempt to set unknown option: '%s'", name);
-    return 0;
+    if (opt->defined) {
+        S_chaz_CLI_error(self, "'%s' specified multiple times", name);
+        return 0;
+    }
+    opt->defined = 1;
+    if (value != NULL) {
+        opt->value = chaz_Util_strdup(value);
+    }
+    return 1;
 }
 
 int
 chaz_CLI_unset(chaz_CLI *self, const char *name) {
-    int i;
-    for (i = 0; i < self->num_opts; i++) {
-        chaz_CLIOption *opt = &self->opts[i];
-        if (strcmp(opt->name, name) == 0) {
-            free(opt->value);
-            opt->value = NULL;
-            opt->defined = 0;
-            return 1;
-        }
+    chaz_CLIOption *opt = S_find_opt(self, name);
+    if (opt == NULL) {
+        S_chaz_CLI_error(self, "Attempt to unset unknown option: '%s'", name);
+        return 0;
     }
-    S_chaz_CLI_error(self, "Attempt to unset unknown option: '%s'", name);
-    return 0;
+    free(opt->value);
+    opt->value = NULL;
+    opt->defined = 0;
+    return 1;
 }
 
 int
 chaz_CLI_defined(chaz_CLI *self, const char *name) {
-    int i;
-    for (i = 0; i < self->num_opts; i++) {
-        chaz_CLIOption *opt = &self->opts[i];
-        if (strcmp(opt->name, name) == 0) {
-            return opt->defined;
-        }
+    chaz_CLIOption *opt = S_find_opt(self, name);
+    if (opt == NULL) {
+        S_chaz_CLI_error(self, "Inquiry for unknown option: '%s'", name);
+        return 0;
     }
-    S_chaz_CLI_error(self, "Inquiry for unknown option: '%s'", name);
-    return 0;
+    return opt->defined;
 }
 
 long
 chaz_CLI_longval(chaz_CLI *self, const char *name) {
-    int i;
-    for (i = 0; i < self->num_opts; i++) {
-        chaz_CLIOption *opt = &self->opts[i];
-        if (strcmp(opt->name, name) == 0) {
-            if (!opt->defined || !opt->value) {
-                return 0;
-            }
-            return strtol(opt->value, NULL, 10);
-        }
+    chaz_CLIOption *opt = S_find_opt(self, name);
+    if (opt == NULL) {
+        S_chaz_CLI_error(self, "Longval request for unknown option: '%s'",
+                         name);
+        return 0;
     }
-    S_chaz_CLI_error(self, "Longval request for unknown option: '%s'", name);
-    return 0;
+    if (!opt->defined || !opt->value) {
+        return 0;
+    }
+    return strtol(opt->value, NULL, 10);
 }
 
 const char*
 chaz_CLI_strval(chaz_CLI *self, const char *name) {
-    int i;
-    for (i = 0; i < self->num_opts; i++) {
-        chaz_CLIOption *opt = &self->opts[i];
-        if (strcmp(opt->name, name) == 0) {
-            return opt->value;
-        }
+    chaz_CLIOption *opt = S_find_opt(self, name);
+    if (opt == NULL) {
+        S_chaz_CLI_error(self, "Strval request for unknown option: '%s'",
+                         name);
+        return 0;
     }
-    S_chaz_CLI_error(self, "Strval request for unknown option: '%s'", name);
-    return 0;
+    return opt->value;
 }
 
 int
