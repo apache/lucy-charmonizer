@@ -89,7 +89,6 @@ chaz_Integers_run(void) {
     int has___int64       = false;
     int has_inttypes      = chaz_HeadCheck_check_header("inttypes.h");
     int has_stdint        = chaz_HeadCheck_check_header("stdint.h");
-    int can_convert_u64_to_double = true;
     char i32_t_type[10];
     char i32_t_postfix[10];
     char u32_t_postfix[10];

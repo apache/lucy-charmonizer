@@ -304,7 +304,6 @@ chaz_CLI_parse(chaz_CLI *self, int argc, const char *argv[]) {
     for (i = 1; i < argc; i++) {
         const char *arg = argv[i];
         size_t name_len = 0;
-        int has_equals = 0;
         const char *value = NULL;
 
         /* Stop processing if we see `-` or `--`. */

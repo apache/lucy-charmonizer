@@ -44,13 +44,8 @@ chaz_Memory_probe_alloca(void) {
         CHAZ_QUOTE(      void *foo = %s(1);         )
         CHAZ_QUOTE(      return 0;                  )
         CHAZ_QUOTE(  }                              );
-    int has_sys_mman_h = false;
-    int has_alloca_h   = false;
-    int has_malloc_h   = false;
-    int need_stdlib_h  = false;
     int has_alloca     = false;
     int has_builtin_alloca    = false;
-    int has_underscore_alloca = false;
     char code_buf[sizeof(alloca_code) + 100];
 
     {
@@ -63,7 +58,6 @@ chaz_Memory_probe_alloca(void) {
             NULL
         };
         if (chaz_HeadCheck_check_many_headers((const char**)mman_headers)) {
-            has_sys_mman_h = true;
             chaz_ConfWriter_add_def("HAS_SYS_MMAN_H", NULL);
         }
     }
@@ -71,8 +65,7 @@ chaz_Memory_probe_alloca(void) {
     /* Unixen. */
     sprintf(code_buf, alloca_code, "alloca.h", "alloca");
     if (chaz_CC_test_compile(code_buf)) {
-        has_alloca_h = true;
-        has_alloca   = true;
+        has_alloca = true;
         chaz_ConfWriter_add_def("HAS_ALLOCA_H", NULL);
         chaz_ConfWriter_add_def("alloca", "alloca");
     }
@@ -84,8 +77,7 @@ chaz_Memory_probe_alloca(void) {
          */
         sprintf(code_buf, alloca_code, "stdlib.h", "alloca");
         if (chaz_CC_test_compile(code_buf)) {
-            has_alloca    = true;
-            need_stdlib_h = true;
+            has_alloca = true;
             chaz_ConfWriter_add_def("ALLOCA_IN_STDLIB_H", NULL);
             chaz_ConfWriter_add_def("alloca", "alloca");
         }
@@ -103,8 +95,7 @@ chaz_Memory_probe_alloca(void) {
     if (!(has_alloca || has_builtin_alloca)) {
         sprintf(code_buf, alloca_code, "malloc.h", "alloca");
         if (chaz_CC_test_compile(code_buf)) {
-            has_malloc_h = true;
-            has_alloca   = true;
+            has_alloca = true;
             chaz_ConfWriter_add_def("HAS_MALLOC_H", NULL);
             chaz_ConfWriter_add_def("alloca", "alloca");
         }
@@ -112,8 +103,6 @@ chaz_Memory_probe_alloca(void) {
     if (!(has_alloca || has_builtin_alloca)) {
         sprintf(code_buf, alloca_code, "malloc.h", "_alloca");
         if (chaz_CC_test_compile(code_buf)) {
-            has_malloc_h = true;
-            has_underscore_alloca = true;
             chaz_ConfWriter_add_def("HAS_MALLOC_H", NULL);
             chaz_ConfWriter_add_def("chy_alloca", "_alloca");
         }

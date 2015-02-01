@@ -46,9 +46,7 @@ void
 chaz_VariadicMacros_run(void) {
     char *output;
     size_t output_len;
-    int has_varmacros      = false;
-    int has_iso_varmacros  = false;
-    int has_gnuc_varmacros = false;
+    int has_varmacros = false;
 
     chaz_ConfWriter_start_module("VariadicMacros");
 
@@ -56,7 +54,6 @@ chaz_VariadicMacros_run(void) {
     output = chaz_CC_capture_output(chaz_VariadicMacros_iso_code, &output_len);
     if (output != NULL) {
         has_varmacros = true;
-        has_iso_varmacros = true;
         chaz_ConfWriter_add_def("HAS_VARIADIC_MACROS", NULL);
         chaz_ConfWriter_add_def("HAS_ISO_VARIADIC_MACROS", NULL);
         free(output);
@@ -65,7 +62,6 @@ chaz_VariadicMacros_run(void) {
     /* Test for GNU-style variadic macros. */
     output = chaz_CC_capture_output(chaz_VariadicMacros_gnuc_code, &output_len);
     if (output != NULL) {
-        has_gnuc_varmacros = true;
         if (has_varmacros == false) {
             has_varmacros = true;
             chaz_ConfWriter_add_def("HAS_VARIADIC_MACROS", NULL);

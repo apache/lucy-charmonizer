@@ -34,7 +34,6 @@
 int
 chaz_Probe_parse_cli_args(int argc, const char *argv[], chaz_CLI *cli) {
     int i;
-    int output_enabled = 0;
 
     /* Register Charmonizer-specific options. */
     chaz_CLI_register(cli, "enable-c", "generate charmony.h", CHAZ_CLI_NO_ARG);

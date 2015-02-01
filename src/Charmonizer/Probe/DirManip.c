@@ -120,7 +120,6 @@ chaz_DirManip_try_rmdir(void) {
 void
 chaz_DirManip_run(void) {
     const char *dir_sep = chaz_OS_dir_sep();
-    int remove_zaps_dirs = false;
     int has_dirent_h = chaz_HeadCheck_check_header("dirent.h");
     int has_direct_h = chaz_HeadCheck_check_header("direct.h");
     int has_dirent_d_namlen = false;
@@ -192,7 +191,6 @@ chaz_DirManip_run(void) {
     /* See whether remove works on directories. */
     chaz_OS_mkdir("_charm_test_remove_me");
     if (0 == remove("_charm_test_remove_me")) {
-        remove_zaps_dirs = true;
         chaz_ConfWriter_add_def("REMOVE_ZAPS_DIRS", NULL);
     }
     chaz_OS_rmdir("_charm_test_remove_me");
