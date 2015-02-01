@@ -240,7 +240,17 @@ chaz_CLI_set(chaz_CLI *self, const char *name, const char *value) {
         return 0;
     }
     opt->defined = 1;
-    if (value != NULL) {
+    if (opt->flags == CHAZ_CLI_NO_ARG) {
+        if (value != NULL) {
+            S_chaz_CLI_error(self, "'%s' expects no value", name);
+            return 0;
+        }
+    }
+    else {
+        if (value == NULL) {
+            S_chaz_CLI_error(self, "'%s' expects a value", name);
+            return 0;
+        }
         opt->value = chaz_Util_strdup(value);
     }
     return 1;
