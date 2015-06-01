@@ -64,7 +64,7 @@ chaz_Memory_probe_alloca(void) {
 
     /* Unixen. */
     sprintf(code_buf, alloca_code, "alloca.h", "alloca");
-    if (chaz_CC_test_compile(code_buf)) {
+    if (chaz_CC_test_link(code_buf)) {
         has_alloca = true;
         chaz_ConfWriter_add_def("HAS_ALLOCA_H", NULL);
         chaz_ConfWriter_add_def("alloca", "alloca");
@@ -76,7 +76,7 @@ chaz_Memory_probe_alloca(void) {
          * are subsequently repeated during the build.
          */
         sprintf(code_buf, alloca_code, "stdlib.h", "alloca");
-        if (chaz_CC_test_compile(code_buf)) {
+        if (chaz_CC_test_link(code_buf)) {
             has_alloca = true;
             chaz_ConfWriter_add_def("ALLOCA_IN_STDLIB_H", NULL);
             chaz_ConfWriter_add_def("alloca", "alloca");
@@ -85,7 +85,7 @@ chaz_Memory_probe_alloca(void) {
     if (!has_alloca) {
         sprintf(code_buf, alloca_code, "stdio.h", /* stdio.h is filler */
                 "__builtin_alloca");
-        if (chaz_CC_test_compile(code_buf)) {
+        if (chaz_CC_test_link(code_buf)) {
             has_builtin_alloca = true;
             chaz_ConfWriter_add_def("alloca", "__builtin_alloca");
         }
@@ -94,7 +94,7 @@ chaz_Memory_probe_alloca(void) {
     /* Windows. */
     if (!(has_alloca || has_builtin_alloca)) {
         sprintf(code_buf, alloca_code, "malloc.h", "alloca");
-        if (chaz_CC_test_compile(code_buf)) {
+        if (chaz_CC_test_link(code_buf)) {
             has_alloca = true;
             chaz_ConfWriter_add_def("HAS_MALLOC_H", NULL);
             chaz_ConfWriter_add_def("alloca", "alloca");
@@ -102,9 +102,9 @@ chaz_Memory_probe_alloca(void) {
     }
     if (!(has_alloca || has_builtin_alloca)) {
         sprintf(code_buf, alloca_code, "malloc.h", "_alloca");
-        if (chaz_CC_test_compile(code_buf)) {
+        if (chaz_CC_test_link(code_buf)) {
             chaz_ConfWriter_add_def("HAS_MALLOC_H", NULL);
-            chaz_ConfWriter_add_def("chy_alloca", "_alloca");
+            chaz_ConfWriter_add_def("alloca", "_alloca");
         }
     }
 }
