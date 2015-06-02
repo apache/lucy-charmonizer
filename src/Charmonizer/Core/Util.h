@@ -51,6 +51,11 @@ chaz_Util_strdup(const char *string);
 char*
 chaz_Util_join(const char *sep, ...);
 
+/* Join a NULL-terminated list of strings using a separator.
+ */
+char*
+chaz_Util_vjoin(const char *sep, va_list args);
+
 /* Get the length of a file (may overshoot on text files under DOS).
  */
 long

@@ -647,6 +647,42 @@ chaz_MakeRule_add_command(chaz_MakeRule *rule, const char *command) {
 }
 
 void
+chaz_MakeRule_add_command_with_libpath(chaz_MakeRule *rule,
+                                       const char *command, ...) {
+    va_list args;
+    char *path        = NULL;
+    char *lib_command = NULL;
+
+    if (strcmp(chaz_OS_shared_lib_ext(), ".so") == 0) {
+        va_start(args, command);
+        path = chaz_Util_vjoin(":", args);
+        va_end(args);
+
+        lib_command = chaz_Util_join("", "LD_LIBRARY_PATH=", path,
+                                     ":$$LD_LIBRARY_PATH ", command, NULL);
+
+        free(path);
+    }
+    else if (strcmp(chaz_OS_shared_lib_ext(), ".dll") == 0) {
+        va_start(args, command);
+        path = chaz_Util_vjoin(";", args);
+        va_end(args);
+
+        lib_command = chaz_Util_join("", "path ", path, ";%path% && ", command,
+                                     NULL);
+    }
+    else {
+        /* Assume that library paths are compiled into the executable on
+         * Darwin.
+         */
+        lib_command = chaz_Util_strdup(command);
+    }
+
+    chaz_MakeRule_add_command(rule, lib_command);
+    free(lib_command);
+}
+
+void
 chaz_MakeRule_add_rm_command(chaz_MakeRule *rule, const char *files) {
     char *command;
 

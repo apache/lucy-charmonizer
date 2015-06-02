@@ -21,6 +21,13 @@
 #include "Charmonizer/Core/Util.h"
 #include "Charmonizer/Core/OperatingSystem.h"
 
+/* va_copy is not part of C89. Assume that simple assignment works if it
+ * isn't defined.
+ */
+#ifndef va_copy
+  #define va_copy(dst, src) ((dst) = (src))
+#endif
+
 /* Global verbosity setting. */
 int chaz_Util_verbosity = 1;
 
@@ -120,6 +127,18 @@ chaz_Util_strdup(const char *string) {
 char*
 chaz_Util_join(const char *sep, ...) {
     va_list args;
+    char *result;
+
+    va_start(args, sep);
+    result = chaz_Util_vjoin(sep, args);
+    va_end(args);
+
+    return result;
+}
+
+char*
+chaz_Util_vjoin(const char *sep, va_list orig_args) {
+    va_list args;
     const char *string;
     char *result, *p;
     size_t sep_len = strlen(sep);
@@ -127,7 +146,7 @@ chaz_Util_join(const char *sep, ...) {
     int i;
 
     /* Determine result size. */
-    va_start(args, sep);
+    va_copy(args, orig_args);
     size = 1;
     string = va_arg(args, const char*);
     for (i = 0; string; ++i) {
@@ -140,7 +159,7 @@ chaz_Util_join(const char *sep, ...) {
     result = (char*)malloc(size);
 
     /* Create result string. */
-    va_start(args, sep);
+    va_copy(args, orig_args);
     p = result;
     string = va_arg(args, const char*);
     for (i = 0; string; ++i) {
