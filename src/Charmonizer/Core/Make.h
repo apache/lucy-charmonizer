@@ -181,6 +181,16 @@ chaz_MakeRule*
 chaz_MakeFile_add_lemon_grammar(chaz_MakeFile *makefile,
                                 const char *base_name);
 
+/** Override compiler flags for a single object file.
+ *
+ * @param makefile The makefile.
+ * @param obj The object file.
+ * @param cflags Compiler flags.
+ */
+void
+chaz_MakeFile_override_cflags(chaz_MakeFile *makefile, const char *obj,
+                              chaz_CFlags *cflags);
+
 /** Write the makefile to a file named 'Makefile' in the current directory.
  *
  * @param makefile The makefile.

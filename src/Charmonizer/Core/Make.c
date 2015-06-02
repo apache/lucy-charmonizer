@@ -504,6 +504,47 @@ chaz_MakeFile_add_lemon_grammar(chaz_MakeFile *makefile,
 }
 
 void
+chaz_MakeFile_override_cflags(chaz_MakeFile *makefile, const char *obj,
+                              chaz_CFlags *cflags) {
+    const char *obj_ext       = chaz_CC_obj_ext();
+    const char *cflags_string = chaz_CFlags_get_string(cflags);
+    size_t obj_ext_len = strlen(obj_ext);
+    size_t obj_len     = strlen(obj);
+    size_t base_len;
+    char *src;
+    char *command;
+    chaz_MakeRule *rule;
+
+    if (obj_len <= obj_ext_len) {
+       chaz_Util_die("Invalid object file: %s", obj);
+    }
+
+    base_len = obj_len - obj_ext_len;
+
+    if (strcmp(obj + base_len, obj_ext) != 0) {
+       chaz_Util_die("Invalid object file: %s", obj);
+    }
+
+    src = malloc(base_len + sizeof(".c"));
+    memcpy(src, obj, base_len);
+    memcpy(src + base_len, ".c", sizeof(".c"));
+
+    rule = chaz_MakeFile_add_rule(makefile, obj, src);
+    if (chaz_CC_msvc_version_num()) {
+        command = chaz_Util_join(" ", "$(CC) /nologo", cflags_string, "/c",
+                                 src, "/Fo$@", NULL);
+    }
+    else {
+        command = chaz_Util_join(" ", "$(CC)", cflags_string, "-c", src,
+                                 "-o $@", NULL);
+    }
+    chaz_MakeRule_add_command(rule, command);
+
+    free(command);
+    free(src);
+}
+
+void
 chaz_MakeFile_write(chaz_MakeFile *makefile) {
     FILE   *out;
     size_t  i;
