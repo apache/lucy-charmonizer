@@ -544,6 +544,70 @@ chaz_MakeFile_override_cflags(chaz_MakeFile *makefile, const char *obj,
     free(src);
 }
 
+chaz_MakeRule*
+chaz_MakeFile_add_obj_dir_rule(chaz_MakeFile *makefile, const char *src_dir,
+                               const char *obj_dir, chaz_CFlags *cflags) {
+    chaz_MakeRule *rule;
+    const char *dir_sep       = chaz_OS_dir_sep();
+    const char *obj_ext       = chaz_CC_obj_ext();
+    const char *mkdir_command = NULL;
+    const char *cflags_string = NULL;
+    char       *target        = NULL;
+    char       *prereq        = NULL;
+    char       *cc_command    = NULL;
+
+    if (obj_dir == NULL) {
+        obj_dir = src_dir;
+    }
+
+    if (strcmp(chaz_Make.make_command, "nmake") == 0) {
+        /* nmake-style search paths in inference rules. */
+        target  = chaz_Util_join("", "{", src_dir, "\\}.c{", obj_dir,
+                                 "\\}", obj_ext, NULL);
+    }
+    else {
+        /* GNU make pattern match. TODO: This is not POSIX-compatible. */
+        target  = chaz_Util_join("", obj_dir, dir_sep, "%", obj_ext, NULL);
+        prereq  = chaz_Util_join(dir_sep, src_dir, "%.c", NULL);
+    }
+
+    rule = chaz_MakeFile_add_rule(makefile, target, prereq);
+
+    if (chaz_Make.shell_type == CHAZ_OS_POSIX) {
+        mkdir_command = "@mkdir -p $$(dirname $@)";
+    }
+    else if (chaz_Make.shell_type == CHAZ_OS_CMD_EXE) {
+        mkdir_command = "@for %F in ($@) do @mkdir %~dpF 2>nul";
+    }
+    else {
+        chaz_Util_die("Unsupported shell type: %d", chaz_Make.shell_type);
+    }
+
+    if (cflags == NULL) {
+        cflags_string = "$(CFLAGS)";
+    }
+    else {
+        cflags_string = chaz_CFlags_get_string(cflags);
+    }
+
+    if (chaz_CC_msvc_version_num()) {
+        cc_command = chaz_Util_join(" ", "$(CC) /nologo", cflags_string,
+                                    "/c $< /Fo$@", NULL);
+    }
+    else {
+        cc_command = chaz_Util_join(" ", "$(CC)", cflags_string, "-c $< -o $@",
+                                    NULL);
+    }
+
+    chaz_MakeRule_add_command(rule, mkdir_command);
+    chaz_MakeRule_add_command(rule, cc_command);
+
+    free(cc_command);
+    free(prereq);
+    free(target);
+    return rule;
+}
+
 void
 chaz_MakeFile_write(chaz_MakeFile *makefile) {
     FILE   *out;

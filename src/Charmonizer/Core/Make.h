@@ -191,6 +191,17 @@ void
 chaz_MakeFile_override_cflags(chaz_MakeFile *makefile, const char *obj,
                               chaz_CFlags *cflags);
 
+/** Add a rule to create object files in a separate directory and/or use
+ * custom compiler flags for all source files in a directory.
+ *
+ * @param src_dir The root directory of source files.
+ * @param obj_dir The directory for object files. Same as `src_dir` if NULL.
+ * @param cflags Compiler flags. Use `$(CFLAGS)` if NULL.
+ */
+chaz_MakeRule*
+chaz_MakeFile_add_obj_dir_rule(chaz_MakeFile *makefile, const char *src_dir,
+                               const char *obj_dir, chaz_CFlags *cflags);
+
 /** Write the makefile to a file named 'Makefile' in the current directory.
  *
  * @param makefile The makefile.
