@@ -503,7 +503,7 @@ chaz_MakeFile_add_lemon_grammar(chaz_MakeFile *makefile,
     return rule;
 }
 
-void
+chaz_MakeRule*
 chaz_MakeFile_override_cflags(chaz_MakeFile *makefile, const char *obj,
                               chaz_CFlags *cflags) {
     const char *obj_ext       = chaz_CC_obj_ext();
@@ -542,6 +542,8 @@ chaz_MakeFile_override_cflags(chaz_MakeFile *makefile, const char *obj,
 
     free(command);
     free(src);
+
+    return rule;
 }
 
 void

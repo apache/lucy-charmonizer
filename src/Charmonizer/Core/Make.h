@@ -187,7 +187,7 @@ chaz_MakeFile_add_lemon_grammar(chaz_MakeFile *makefile,
  * @param obj The object file.
  * @param cflags Compiler flags.
  */
-void
+chaz_MakeRule*
 chaz_MakeFile_override_cflags(chaz_MakeFile *makefile, const char *obj,
                               chaz_CFlags *cflags);
 
