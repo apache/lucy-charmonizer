@@ -208,6 +208,7 @@ chaz_CC_compile_exe(const char *source_path, const char *exe_name,
         chaz_OS_run_quietly(command);
     }
     else {
+        printf("%s\n", command);
         system(command);
     }
 
@@ -266,6 +267,7 @@ chaz_CC_compile_obj(const char *source_path, const char *obj_name,
         chaz_OS_run_quietly(command);
     }
     else {
+        printf("%s\n", command);
         system(command);
     }
 
