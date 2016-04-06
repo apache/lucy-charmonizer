@@ -112,7 +112,8 @@ S_chaz_CLI_rebuild_help(chaz_CLI *self) {
                 }
                 self->help[current_len++] = '=';
                 for (j = 0; opt->name[j]; j++) {
-                    self->help[current_len++] = toupper(opt->name[j]);
+                    unsigned char c = (unsigned char)opt->name[j];
+                    self->help[current_len++] = toupper(c);
                 }
                 if (opt->flags & CHAZ_CLI_ARG_OPTIONAL) {
                     self->help[current_len++] = ']';
@@ -330,7 +331,7 @@ chaz_CLI_parse(chaz_CLI *self, int argc, const char *argv[]) {
         /* Extract the name of the argument, look for a potential value. */
         while (1) {
             char c = arg[name_len + 2];
-            if (isalnum(c) || c == '-' || c == '_') {
+            if (isalnum((unsigned char)c) || c == '-' || c == '_') {
                 name_len++;
             }
             else if (c == '\0') {
