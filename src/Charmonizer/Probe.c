@@ -82,10 +82,10 @@ chaz_Probe_parse_cli_args(int argc, const char *argv[], chaz_CLI *cli) {
         size_t r   = len;
         size_t trimmed_len;
 
-        while (isspace(arg[l])) {
+        while (isspace((unsigned char)arg[l])) {
             ++l;
         }
-        while (r > l && isspace(arg[r-1])) {
+        while (r > l && isspace((unsigned char)arg[r-1])) {
             --r;
         }
 

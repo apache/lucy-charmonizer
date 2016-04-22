@@ -861,7 +861,7 @@ chaz_Make_list_files(const char *dir, const char *ext,
 
         /* Strip whitespace from end of output. */
         for (prefix_len = output_len; prefix_len > 0; --prefix_len) {
-            if (!isspace(output[prefix_len-1])) { break; }
+            if (!isspace((unsigned char)output[prefix_len-1])) { break; }
         }
         prefix = (char*)malloc(prefix_len + 2);
         memcpy(prefix, output, prefix_len);

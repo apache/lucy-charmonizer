@@ -74,8 +74,8 @@ chaz_OS_init(void) {
         uname = chaz_OS_run_and_capture("uname", &uname_len);
         for (i = 0; i < CHAZ_OS_NAME_MAX && i < uname_len; i++) {
             char c = uname[i];
-            if (!c || isspace(c)) { break; }
-            chaz_OS.name[i] = tolower(c);
+            if (!c || isspace((unsigned char)c)) { break; }
+            chaz_OS.name[i] = tolower((unsigned char)c);
         }
         if (i > 0) { chaz_OS.name[i] = '\0'; }
         else       { strcpy(chaz_OS.name, "unknown_unix"); }

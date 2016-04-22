@@ -114,8 +114,8 @@ chaz_Headers_encode_affirmation(const char *header_name, char *buffer, size_t bu
             *buf = '\0';
             break;
         }
-        else if (isalnum(*header_name)) {
-            *buf = toupper(*header_name);
+        else if (isalnum((unsigned char)*header_name)) {
+            *buf = toupper((unsigned char)*header_name);
         }
         else {
             *buf = '_';

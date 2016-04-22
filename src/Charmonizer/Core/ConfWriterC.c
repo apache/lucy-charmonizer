@@ -142,7 +142,7 @@ chaz_ConfWriterC_vappend_conf(const char *fmt, va_list args) {
 
 static int
 chaz_ConfWriterC_sym_is_uppercase(const char *sym) {
-    return isupper(sym[0]);
+    return isupper((unsigned char)sym[0]);
 }
 
 static char*
@@ -150,7 +150,7 @@ chaz_ConfWriterC_uppercase_string(const char *src) {
     char *retval = chaz_Util_strdup(src);
     size_t i;
     for (i = 0; retval[i]; ++i) {
-        retval[i] = toupper(retval[i]);
+        retval[i] = toupper((unsigned char)retval[i]);
     }
     return retval;
 }
