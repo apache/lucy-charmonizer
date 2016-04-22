@@ -40,6 +40,15 @@ static const char chaz_Integers_sizes_code[] =
     CHAZ_QUOTE(      return 0;                             )
     CHAZ_QUOTE(  }                                         );
 
+static const char chaz_Integers_stdint_type_code[] =
+    CHAZ_QUOTE(  #include <stdint.h>                       )
+    CHAZ_QUOTE(  #include <stdio.h>                        )
+    CHAZ_QUOTE(  int main()                                )
+    CHAZ_QUOTE(  {                                         )
+    CHAZ_QUOTE(      printf("%%d", (int)sizeof(%s));       )
+    CHAZ_QUOTE(      return 0;                             )
+    CHAZ_QUOTE(  }                                         );
+
 static const char chaz_Integers_type64_code[] =
     CHAZ_QUOTE(  #include <stdio.h>                        )
     CHAZ_QUOTE(  int main()                                )
@@ -87,6 +96,7 @@ chaz_Integers_run(void) {
     int has_64            = false;
     int has_long_long     = false;
     int has___int64       = false;
+    int has_intptr_t      = false;
     int has_inttypes      = chaz_HeadCheck_check_header("inttypes.h");
     int has_stdint        = chaz_HeadCheck_check_header("stdint.h");
     char i32_t_type[10];
@@ -95,6 +105,8 @@ chaz_Integers_run(void) {
     char i64_t_type[10];
     char i64_t_postfix[10];
     char u64_t_postfix[10];
+    char printf_modifier_32[10];
+    char printf_modifier_64[10];
     char code_buf[1000];
     char scratch[50];
 
@@ -147,6 +159,15 @@ chaz_Integers_run(void) {
         free(output);
     }
 
+    /* Determine whether the intptr_t type is available (it's optional in
+     * C99). */
+    sprintf(code_buf, chaz_Integers_stdint_type_code, "intptr_t");
+    output = chaz_CC_capture_output(code_buf, &output_len);
+    if (output != NULL) {
+        has_intptr_t = true;
+        free(output);
+    }
+
     /* Figure out which integer types are available. */
     if (sizeof_char == 1) {
         has_8 = true;
@@ -159,12 +180,14 @@ chaz_Integers_run(void) {
         strcpy(i32_t_type, "int");
         strcpy(i32_t_postfix, "");
         strcpy(u32_t_postfix, "U");
+        strcpy(printf_modifier_32, "");
     }
     else if (sizeof_long == 4) {
         has_32 = true;
         strcpy(i32_t_type, "long");
         strcpy(i32_t_postfix, "L");
         strcpy(u32_t_postfix, "UL");
+        strcpy(printf_modifier_32, "l");
     }
     if (sizeof_long == 8) {
         has_64 = true;
@@ -219,6 +242,46 @@ chaz_Integers_run(void) {
                 chaz_Util_die("64-bit types, but no literal syntax found");
             }
         }
+    }
+
+    /* Probe for 64-bit printf format string modifier. */
+    if (has_64) {
+        int i;
+        const char *options[] = {
+            "ll",
+            "l",
+            "L",
+            "q",   /* Some *BSDs */
+            "I64", /* Microsoft */
+            NULL,
+        };
+
+        /* Buffer to hold the code, and its start and end. */
+        static const char format_64_code[] =
+            CHAZ_QUOTE(  #include <stdio.h>                            )
+            CHAZ_QUOTE(  int main() {                                  )
+            CHAZ_QUOTE(      printf("%%%su", 18446744073709551615%s);  )
+            CHAZ_QUOTE(      return 0;                                 )
+            CHAZ_QUOTE( }                                              );
+
+        for (i = 0; options[i] != NULL; i++) {
+            /* Try to print 2**64-1, and see if we get it back intact. */
+            sprintf(code_buf, format_64_code, options[i], u64_t_postfix);
+            output = chaz_CC_capture_output(code_buf, &output_len);
+            int success = output != NULL
+                          && strcmp(output, "18446744073709551615") == 0;
+            free(output);
+
+            if (success) {
+                break;
+            }
+        }
+
+        if (options[i] == NULL) {
+            chaz_Util_die("64-bit types, but no printf modifier found");
+        }
+
+        strcpy(printf_modifier_64, options[i]);
     }
 
     /* Write out some conditional defines. */
@@ -320,10 +383,14 @@ chaz_Integers_run(void) {
          *   int16_t
          *   int32_t
          *   int64_t
+         *   intmax_t
+         *   intptr_t
          *   uint8_t
          *   uint16_t
          *   uint32_t
          *   uint64_t
+         *   uintmax_t
+         *   uintptr_t
          */
         if (has_8) {
             chaz_ConfWriter_add_global_typedef("signed char", "int8_t");
@@ -343,6 +410,30 @@ chaz_Integers_run(void) {
             sprintf(scratch, "unsigned %s", i64_t_type);
             chaz_ConfWriter_add_global_typedef(scratch, "uint64_t");
         }
+
+        if (has_64) {
+            chaz_ConfWriter_add_global_typedef(i64_t_type, "intmax_t");
+            sprintf(scratch, "unsigned %s", i64_t_type);
+            chaz_ConfWriter_add_global_typedef(scratch, "uintmax_t");
+        }
+        else if (has_32) {
+            chaz_ConfWriter_add_global_typedef(i32_t_type, "intmax_t");
+            sprintf(scratch, "unsigned %s", i32_t_type);
+            chaz_ConfWriter_add_global_typedef(scratch, "uintmax_t");
+        }
+    }
+
+    if (!has_intptr_t) {
+        if (sizeof_ptr == 4) {
+            chaz_ConfWriter_add_global_typedef(i32_t_type, "intptr_t");
+            sprintf(scratch, "unsigned %s", i32_t_type);
+            chaz_ConfWriter_add_global_typedef(scratch, "uintptr_t");
+        }
+        else if (sizeof_ptr == 8) {
+            chaz_ConfWriter_add_global_typedef(i64_t_type, "intptr_t");
+            sprintf(scratch, "unsigned %s", i64_t_type);
+            chaz_ConfWriter_add_global_typedef(scratch, "uintptr_t");
+        }
     }
 
     chaz_ConfWriter_end_module();
@@ -360,14 +451,20 @@ chaz_Integers_run(void) {
          *   INT16_MAX
          *   INT32_MAX
          *   INT64_MAX
+         *   INTMAX_MAX
+         *   INTPTR_MAX
          *   INT8_MIN
          *   INT16_MIN
          *   INT32_MIN
          *   INT64_MIN
+         *   INTMAX_MIN
+         *   INTPTR_MIN
          *   UINT8_MAX
          *   UINT16_MAX
          *   UINT32_MAX
          *   UINT64_MAX
+         *   UINTMAX_MAX
+         *   UINTPTR_MAX
          *   SIZE_MAX
          */
         if (has_8) {
@@ -382,17 +479,49 @@ chaz_Integers_run(void) {
         }
         if (has_32) {
             chaz_ConfWriter_add_global_def("INT32_MAX", "2147483647");
-            chaz_ConfWriter_add_global_def("INT32_MIN", "(-INT32_MAX-1)");
+            chaz_ConfWriter_add_global_def("INT32_MIN", "(-2147483647-1)");
             chaz_ConfWriter_add_global_def("UINT32_MAX", "4294967295U");
         }
         if (has_64) {
             sprintf(scratch, "9223372036854775807%s", i64_t_postfix);
             chaz_ConfWriter_add_global_def("INT64_MAX", scratch);
-            chaz_ConfWriter_add_global_def("INT64_MIN", "(-INT64_MAX-1)");
+            sprintf(scratch, "(-9223372036854775807%s-1)", i64_t_postfix);
+            chaz_ConfWriter_add_global_def("INT64_MIN", scratch);
             sprintf(scratch, "18446744073709551615%s", u64_t_postfix);
             chaz_ConfWriter_add_global_def("UINT64_MAX", scratch);
         }
+
+        if (has_64) {
+            sprintf(scratch, "9223372036854775807%s", i64_t_postfix);
+            chaz_ConfWriter_add_global_def("INTMAX_MAX", scratch);
+            sprintf(scratch, "(-9223372036854775807%s-1)", i64_t_postfix);
+            chaz_ConfWriter_add_global_def("INTMAX_MIN", scratch);
+            sprintf(scratch, "18446744073709551615%s", u64_t_postfix);
+            chaz_ConfWriter_add_global_def("UINTMAX_MAX", scratch);
+        }
+        else if (has_32) {
+            chaz_ConfWriter_add_global_def("INTMAX_MAX", "2147483647");
+            chaz_ConfWriter_add_global_def("INTMAX_MIN", "(-2147483647-1)");
+            chaz_ConfWriter_add_global_def("UINTMAX_MAX", "4294967295U");
+        }
+
         chaz_ConfWriter_add_global_def("SIZE_MAX", "((size_t)-1)");
+    }
+
+    if (!has_intptr_t) {
+        if (sizeof_ptr == 4) {
+            chaz_ConfWriter_add_global_def("INTPTR_MAX", "2147483647");
+            chaz_ConfWriter_add_global_def("INTPTR_MIN", "(-2147483647-1)");
+            chaz_ConfWriter_add_global_def("UINTPTR_MAX", "4294967295U");
+        }
+        else if (sizeof_ptr == 8) {
+            sprintf(scratch, "9223372036854775807%s", i64_t_postfix);
+            chaz_ConfWriter_add_global_def("INTPTR_MAX", scratch);
+            sprintf(scratch, "(-9223372036854775807%s-1)", i64_t_postfix);
+            chaz_ConfWriter_add_global_def("INTPTR_MIN", scratch);
+            sprintf(scratch, "18446744073709551615%s", u64_t_postfix);
+            chaz_ConfWriter_add_global_def("UINTPTR_MAX", scratch);
+        }
     }
 
     chaz_ConfWriter_end_module();
@@ -408,8 +537,10 @@ chaz_Integers_run(void) {
         /* We support only the following subset of stdint.h
          *   INT32_C
          *   INT64_C
+         *   INTMAX_C
          *   UINT32_C
          *   UINT64_C
+         *   UINTMAX_C
          */
         if (has_32) {
             if (strcmp(i32_t_postfix, "") == 0) {
@@ -428,6 +559,24 @@ chaz_Integers_run(void) {
             sprintf(scratch, "n##%s", u64_t_postfix);
             chaz_ConfWriter_add_global_def("UINT64_C(n)", scratch);
         }
+
+        if (has_64) {
+            sprintf(scratch, "n##%s", i64_t_postfix);
+            chaz_ConfWriter_add_global_def("INTMAX_C(n)", scratch);
+            sprintf(scratch, "n##%s", u64_t_postfix);
+            chaz_ConfWriter_add_global_def("UINTMAX_C(n)", scratch);
+        }
+        else if (has_32) {
+            if (strcmp(i32_t_postfix, "") == 0) {
+                chaz_ConfWriter_add_global_def("INTMAX_C(n)", "n");
+            }
+            else {
+                sprintf(scratch, "n##%s", i32_t_postfix);
+                chaz_ConfWriter_add_global_def("INTMAX_C(n)", scratch);
+            }
+            sprintf(scratch, "n##%s", u32_t_postfix);
+            chaz_ConfWriter_add_global_def("UINTMAX_C(n)", scratch);
+        }
     }
 
     chaz_ConfWriter_end_module();
@@ -439,44 +588,72 @@ chaz_Integers_run(void) {
     if (has_inttypes) {
         chaz_ConfWriter_add_sys_include("inttypes.h");
     }
-    else {
+
+    {
         /* We support only the following subset of inttypes.h
+         *   PRId32
+         *   PRIi32
+         *   PRIo32
+         *   PRIu32
+         *   PRIx32
+         *   PRIX32
          *   PRId64
+         *   PRIi64
+         *   PRIo64
          *   PRIu64
+         *   PRIx64
+         *   PRIX64
+         *   PRIdMAX
+         *   PRIiMAX
+         *   PRIoMAX
+         *   PRIuMAX
+         *   PRIxMAX
+         *   PRIXMAX
+         *   PRIdPTR
+         *   PRIiPTR
+         *   PRIoPTR
+         *   PRIuPTR
+         *   PRIxPTR
+         *   PRIXPTR
          */
-        if (has_64) {
-            int i;
-            const char *options[] = {
-                "ll",
-                "l",
-                "L",
-                "q",  /* Some *BSDs */
-                "I64", /* Microsoft */
-                NULL,
-            };
+        const char *ptr;
+        char macro_name_32[]  = "PRI.32";
+        char macro_name_64[]  = "PRI.64";
+        char macro_name_max[] = "PRI.MAX";
+        char macro_name_ptr[] = "PRI.PTR";
 
-            /* Buffer to hold the code, and its start and end. */
-            static const char format_64_code[] =
-                CHAZ_QUOTE(  #include <stdio.h>                            )
-                CHAZ_QUOTE(  int main() {                                  )
-                CHAZ_QUOTE(      printf("%%%su", 18446744073709551615%s);  )
-                CHAZ_QUOTE(      return 0;                                 )
-                CHAZ_QUOTE( }                                              );
+        for (ptr = "diouxX"; ptr[0] != '\0'; ptr++) {
+            int c = ptr[0];
 
-            for (i = 0; options[i] != NULL; i++) {
-                /* Try to print 2**64-1, and see if we get it back intact. */
-                sprintf(code_buf, format_64_code, options[i], u64_t_postfix);
-                output = chaz_CC_capture_output(code_buf, &output_len);
+            if (has_32) {
+                sprintf(scratch, "\"%s%c\"", printf_modifier_32, c);
 
-                if (output != NULL
-                    && strcmp(output, "18446744073709551615") == 0
-                   ) {
-                    sprintf(scratch, "\"%sd\"", options[i]);
-                    chaz_ConfWriter_add_global_def("PRId64", scratch);
-                    sprintf(scratch, "\"%su\"", options[i]);
-                    chaz_ConfWriter_add_global_def("PRIu64", scratch);
-                    free(output);
-                    break;
+                if (!has_inttypes) {
+                    macro_name_32[3] = c;
+                    chaz_ConfWriter_add_global_def(macro_name_32, scratch);
+                    if (!has_64) {
+                        macro_name_max[3] = c;
+                        chaz_ConfWriter_add_global_def(macro_name_max,
+                                                       scratch);
+                    }
+                }
+                if (!has_intptr_t && sizeof_ptr == 4) {
+                    macro_name_ptr[3] = c;
+                    chaz_ConfWriter_add_global_def(macro_name_ptr, scratch);
+                }
+            }
+            if (has_64) {
+                sprintf(scratch, "\"%s%c\"", printf_modifier_64, c);
+
+                if (!has_inttypes) {
+                    macro_name_64[3] = c;
+                    chaz_ConfWriter_add_global_def(macro_name_64, scratch);
+                    macro_name_max[3] = c;
+                    chaz_ConfWriter_add_global_def(macro_name_max, scratch);
+                }
+                if (!has_intptr_t && sizeof_ptr == 8) {
+                    macro_name_ptr[3] = c;
+                    chaz_ConfWriter_add_global_def(macro_name_ptr, scratch);
                 }
             }
         }
