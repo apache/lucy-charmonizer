@@ -428,33 +428,6 @@ chaz_MakeFile_add_static_lib(chaz_MakeFile *makefile, chaz_Lib *lib,
     }
     chaz_MakeRule_add_rm_command(makefile->clean, filename);
 
-    /* Add symlinks. */
-    if (strcmp(shlib_ext, ".dll") != 0) {
-        char *major_v_name = chaz_Lib_major_version_filename(lib);
-        char *no_v_name    = chaz_Lib_no_version_filename(lib);
-
-        command = chaz_Util_join(" ", "ln -sf", filename, major_v_name, NULL);
-        chaz_MakeRule_add_command(rule, command);
-        free(command);
-
-        if (strcmp(shlib_ext, ".dylib") == 0) {
-            command = chaz_Util_join(" ", "ln -sf", filename, no_v_name,
-                                     NULL);
-        }
-        else {
-            command = chaz_Util_join(" ", "ln -sf", major_v_name, no_v_name,
-                                     NULL);
-        }
-        chaz_MakeRule_add_command(rule, command);
-        free(command);
-
-        chaz_MakeRule_add_rm_command(makefile->clean, major_v_name);
-        chaz_MakeRule_add_rm_command(makefile->clean, no_v_name);
-
-        free(major_v_name);
-        free(no_v_name);
-    }
-
     free(filename);
     return rule;
 }

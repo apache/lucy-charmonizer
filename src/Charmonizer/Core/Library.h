@@ -26,14 +26,12 @@ extern "C" {
 
 typedef struct chaz_Lib chaz_Lib;
 
-typedef enum {
-    chaz_Lib_SHARED = 1,
-    chaz_Lib_STATIC = 2
-} chaz_LibType;
+chaz_Lib*
+chaz_Lib_new_shared(const char *name, const char *version,
+                    const char *major_version);
 
 chaz_Lib*
-chaz_Lib_new(const char *name, chaz_LibType type, const char *version,
-             const char *major_version);
+chaz_Lib_new_static(const char *name);
 
 void
 chaz_Lib_destroy(chaz_Lib *flags);
