@@ -266,10 +266,11 @@ chaz_Integers_run(void) {
 
         for (i = 0; options[i] != NULL; i++) {
             /* Try to print 2**64-1, and see if we get it back intact. */
+            int success;
             sprintf(code_buf, format_64_code, options[i], u64_t_postfix);
             output = chaz_CC_capture_output(code_buf, &output_len);
-            int success = output != NULL
-                          && strcmp(output, "18446744073709551615") == 0;
+            success = output != NULL
+                      && strcmp(output, "18446744073709551615") == 0;
             free(output);
 
             if (success) {
