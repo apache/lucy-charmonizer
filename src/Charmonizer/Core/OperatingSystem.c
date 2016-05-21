@@ -33,107 +33,52 @@ static struct {
     char name[CHAZ_OS_NAME_MAX+1];
     char dev_null[20];
     char dir_sep[2];
-    char exe_ext[5];
-    char static_lib_ext[5];
-    char shared_lib_ext[7];
     char local_command_start[3];
     int  shell_type;
-} chaz_OS = { "", "", "", "", "", "", "", 0 };
+} chaz_OS = { "", "", "", "", 0 };
 
 void
 chaz_OS_init(void) {
+    char *output;
+    size_t output_len;
+
     if (chaz_Util_verbosity) {
         printf("Initializing Charmonizer/Core/OperatingSystem...\n");
     }
 
-    if (chaz_Util_verbosity) {
-        printf("Trying to find a bit-bucket a la /dev/null...\n");
-    }
+    /* Detect shell based on escape character. */
 
-    /* Detect shell based on whether the bitbucket is "/dev/null" or "nul".
-     * Start with "nul" as some Windows boxes seem to have a "/dev/null".
-     */
-    if (chaz_Util_can_open_file("nul")) {
-        strcpy(chaz_OS.name, "windows");
-        strcpy(chaz_OS.dev_null, "nul");
-        strcpy(chaz_OS.dir_sep, "\\");
-        strcpy(chaz_OS.exe_ext, ".exe");
-        strcpy(chaz_OS.shared_lib_ext, ".dll");
-        strcpy(chaz_OS.static_lib_ext, ".lib");
-        strcpy(chaz_OS.local_command_start, ".\\");
+    /* Needed to make redirection work. */
+    chaz_OS.shell_type = CHAZ_OS_POSIX;
+
+    output = chaz_OS_run_and_capture("echo foo\\^bar", &output_len);
+
+    if (strncmp(output, "foo\\bar", 7) == 0) {
+        /* Escape character is caret. */
+        if (chaz_Util_verbosity) {
+            printf("Detected cmd.exe shell\n");
+        }
         chaz_OS.shell_type = CHAZ_OS_CMD_EXE;
+        strcpy(chaz_OS.dir_sep, "\\");
+        strcpy(chaz_OS.dev_null, "nul");
+        /* Empty string should work, too. */
+        strcpy(chaz_OS.local_command_start, ".\\");
     }
-    else if (chaz_Util_can_open_file("/dev/null")) {
-        char   *uname;
-        size_t  uname_len;
-        size_t i;
-
+    else if (strncmp(output, "foo^bar", 7) == 0) {
+        /* Escape character is backslash. */
+        if (chaz_Util_verbosity) {
+            printf("Detected POSIX shell\n");
+        }
         chaz_OS.shell_type = CHAZ_OS_POSIX;
-
-        /* Detect Unix name. */
-        uname = chaz_OS_run_and_capture("uname", &uname_len);
-        for (i = 0; i < CHAZ_OS_NAME_MAX && i < uname_len; i++) {
-            char c = uname[i];
-            if (!c || isspace((unsigned char)c)) { break; }
-            chaz_OS.name[i] = tolower((unsigned char)c);
-        }
-        if (i > 0) { chaz_OS.name[i] = '\0'; }
-        else       { strcpy(chaz_OS.name, "unknown_unix"); }
-        free(uname);
-
-        strcpy(chaz_OS.dev_null, "/dev/null");
         strcpy(chaz_OS.dir_sep, "/");
-        strcpy(chaz_OS.exe_ext, "");
-        strcpy(chaz_OS.static_lib_ext, ".a");
-        if (memcmp(chaz_OS.name, "darwin", 6) == 0) {
-            strcpy(chaz_OS.shared_lib_ext, ".dylib");
-        }
-        else if (memcmp(chaz_OS.name, "cygwin", 6) == 0) {
-            strcpy(chaz_OS.shared_lib_ext, ".dll");
-        }
-        else {
-            strcpy(chaz_OS.shared_lib_ext, ".so");
-        }
+        strcpy(chaz_OS.dev_null, "/dev/null");
         strcpy(chaz_OS.local_command_start, "./");
     }
     else {
-        /* Bail out because we couldn't find anything like /dev/null. */
-        chaz_Util_die("Couldn't find anything like /dev/null");
+        chaz_Util_die("Couldn't identify shell");
     }
 
-    if (chaz_Util_verbosity) {
-        printf("Detected OS: %s\n", chaz_OS.name);
-    }
-}
-
-const char*
-chaz_OS_name(void) {
-    return chaz_OS.name;
-}
-
-int
-chaz_OS_is_darwin(void) {
-    return memcmp(chaz_OS.name, "darwin", 6) == 0;
-}
-
-int
-chaz_OS_is_cygwin(void) {
-    return memcmp(chaz_OS.name, "cygwin", 6) == 0;
-}
-
-const char*
-chaz_OS_exe_ext(void) {
-    return chaz_OS.exe_ext;
-}
-
-const char*
-chaz_OS_shared_lib_ext(void) {
-    return chaz_OS.shared_lib_ext;
-}
-
-const char*
-chaz_OS_static_lib_ext(void) {
-    return chaz_OS.static_lib_ext;
+    free(output);
 }
 
 const char*

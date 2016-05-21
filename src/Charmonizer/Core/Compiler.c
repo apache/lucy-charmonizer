@@ -22,6 +22,11 @@
 #include "Charmonizer/Core/ConfWriter.h"
 #include "Charmonizer/Core/OperatingSystem.h"
 
+/* Detect binary format.
+ */
+static void
+chaz_CC_detect_binary_format(const char *filename);
+
 /* Detect macros which may help to identify some compilers.
  */
 static void
@@ -37,8 +42,13 @@ static struct {
     char     *cc_command;
     char     *cflags;
     char     *try_exe_name;
+    char      exe_ext[10];
+    char      shared_lib_ext[10];
+    char      static_lib_ext[10];
+    char      import_lib_ext[10];
     char      obj_ext[10];
     char      gcc_version_str[30];
+    int       binary_format;
     int       cflags_style;
     int       intval___GNUC__;
     int       intval___GNUC_MINOR__;
@@ -50,8 +60,8 @@ static struct {
     chaz_CFlags *temp_cflags;
 } chaz_CC = {
     NULL, NULL, NULL,
-    "", "",
-    0, 0, 0, 0, 0, 0, 0,
+    "", "", "", "", "", "",
+    0, 0, 0, 0, 0, 0, 0, 0,
     NULL, NULL
 };
 
@@ -70,40 +80,40 @@ chaz_CC_init(const char *compiler_command, const char *compiler_flags) {
     chaz_CC.temp_cflags  = NULL;
 
     /* Set names for the targets which we "try" to compile. */
+    strcpy(chaz_CC.exe_ext, ".exe");
     chaz_CC.try_exe_name
-        = chaz_Util_join("", CHAZ_CC_TRY_BASENAME, chaz_OS_exe_ext(), NULL);
+        = chaz_Util_join("", CHAZ_CC_TRY_BASENAME, chaz_CC.exe_ext, NULL);
 
     /* If we can't compile or execute anything, game over. */
     if (chaz_Util_verbosity) {
         printf("Trying to compile and execute a small test file...\n");
     }
-    if (!chaz_Util_remove_and_verify(chaz_CC.try_exe_name)) {
-        chaz_Util_die("Failed to delete file '%s'", chaz_CC.try_exe_name);
-    }
+
     /* Try MSVC argument style. */
-    strcpy(chaz_CC.obj_ext, ".obj");
-    chaz_CC.cflags_style = CHAZ_CFLAGS_STYLE_MSVC;
-    compile_succeeded = chaz_CC_compile_exe(CHAZ_CC_TRY_SOURCE_PATH,
-                                            CHAZ_CC_TRY_BASENAME, code);
     if (!compile_succeeded) {
-        /* Try POSIX argument style. */
-        strcpy(chaz_CC.obj_ext, ".o");
-        chaz_CC.cflags_style = CHAZ_CFLAGS_STYLE_POSIX;
+        chaz_CC.cflags_style = CHAZ_CFLAGS_STYLE_MSVC;
+        if (!chaz_Util_remove_and_verify(chaz_CC.try_exe_name)) {
+            chaz_Util_die("Failed to delete file '%s'", chaz_CC.try_exe_name);
+        }
         compile_succeeded = chaz_CC_compile_exe(CHAZ_CC_TRY_SOURCE_PATH,
                                                 CHAZ_CC_TRY_BASENAME, code);
     }
+
+    /* Try POSIX argument style. */
+    if (!compile_succeeded) {
+        chaz_CC.cflags_style = CHAZ_CFLAGS_STYLE_POSIX;
+        if (!chaz_Util_remove_and_verify(chaz_CC.try_exe_name)) {
+            chaz_Util_die("Failed to delete file '%s'", chaz_CC.try_exe_name);
+        }
+        compile_succeeded = chaz_CC_compile_exe(CHAZ_CC_TRY_SOURCE_PATH,
+                                                CHAZ_CC_TRY_BASENAME, code);
+    }
+
     if (!compile_succeeded) {
         chaz_Util_die("Failed to compile a small test file");
     }
-    retval = chaz_OS_run_local_redirected(chaz_CC.try_exe_name,
-                                          chaz_OS_dev_null());
+    chaz_CC_detect_binary_format(chaz_CC.try_exe_name);
     chaz_Util_remove_and_verify(chaz_CC.try_exe_name);
-    if (retval < 0) {
-        chaz_Util_die("Failed to execute test file: %s", strerror(errno));
-    }
-    if (retval > 0) {
-        chaz_Util_die("Unexpected exit code %d from test file", retval);
-    }
 
     chaz_CC_detect_known_compilers();
 
@@ -121,6 +131,97 @@ chaz_CC_init(const char *compiler_command, const char *compiler_flags) {
     }
     chaz_CC.extra_cflags = chaz_CFlags_new(chaz_CC.cflags_style);
     chaz_CC.temp_cflags  = chaz_CFlags_new(chaz_CC.cflags_style);
+
+    /* File extensions. */
+    if (chaz_CC.binary_format == CHAZ_CC_BINFMT_ELF) {
+        if (chaz_Util_verbosity) {
+            printf("Detected binary format: ELF\n");
+        }
+        strcpy(chaz_CC.exe_ext, "");
+        strcpy(chaz_CC.shared_lib_ext, ".so");
+        strcpy(chaz_CC.static_lib_ext, ".a");
+        strcpy(chaz_CC.obj_ext, ".o");
+    }
+    else if (chaz_CC.binary_format == CHAZ_CC_BINFMT_MACHO) {
+        if (chaz_Util_verbosity) {
+            printf("Detected binary format: Mach-O\n");
+        }
+        strcpy(chaz_CC.exe_ext, "");
+        strcpy(chaz_CC.shared_lib_ext, ".dylib");
+        strcpy(chaz_CC.static_lib_ext, ".a");
+        strcpy(chaz_CC.obj_ext, ".o");
+    }
+    else if (chaz_CC.binary_format == CHAZ_CC_BINFMT_PE) {
+        if (chaz_Util_verbosity) {
+            printf("Detected binary format: Portable Executable\n");
+        }
+        strcpy(chaz_CC.exe_ext, ".exe");
+        strcpy(chaz_CC.shared_lib_ext, ".dll");
+        if (chaz_CC.intval___GNUC__) {
+            strcpy(chaz_CC.static_lib_ext, ".a");
+            strcpy(chaz_CC.import_lib_ext, ".dll.a");
+            strcpy(chaz_CC.obj_ext, ".o");
+        }
+        else {
+            strcpy(chaz_CC.static_lib_ext, ".lib");
+            strcpy(chaz_CC.import_lib_ext, ".lib");
+            strcpy(chaz_CC.obj_ext, ".obj");
+        }
+    }
+    else {
+        chaz_Util_die("Failed to detect binary format");
+    }
+
+    free(chaz_CC.try_exe_name);
+    chaz_CC.try_exe_name
+        = chaz_Util_join("", CHAZ_CC_TRY_BASENAME, chaz_CC.exe_ext, NULL);
+}
+
+static void
+chaz_CC_detect_binary_format(const char *filename) {
+    char *output;
+    size_t output_len;
+    int binary_format = 0;
+
+    output = chaz_Util_slurp_file(filename, &output_len);
+
+    /* ELF. */
+    if (binary_format == 0 && output_len >= 4
+        && memcmp(output, "\x7F" "ELF", 4) == 0
+       ) {
+        binary_format = CHAZ_CC_BINFMT_ELF;
+    }
+
+    /* Macho-O. */
+    if (binary_format == 0 && output_len >= 4
+        && (memcmp(output, "\xCA\xFE\xBA\xBE", 4) == 0      /* Fat binary. */
+            || memcmp(output, "\xFE\xED\xFA\xCE", 4) == 0   /* 32-bit BE. */
+            || memcmp(output, "\xFE\xED\xFA\xCF", 4) == 0   /* 64-bit BE. */
+            || memcmp(output, "\xCE\xFA\xED\xFE", 4) == 0   /* 32-bit LE. */
+            || memcmp(output, "\xCF\xFA\xED\xFE", 4) == 0)  /* 64-bit LE. */
+       ) {
+        binary_format = CHAZ_CC_BINFMT_MACHO;
+    }
+
+    /* Portable Executable. */
+    if (binary_format == 0 && output_len >= 0x40
+        && memcmp(output, "MZ", 2) == 0
+       ) {
+        size_t pe_header_off =
+            (unsigned char)output[0x3C]
+            | ((unsigned char)output[0x3D] << 8)
+            | ((unsigned char)output[0x3E] << 16)
+            | ((unsigned char)output[0x3F] << 24);
+
+        if (output_len >= pe_header_off + 4
+            && memcmp(output + pe_header_off, "PE\0\0", 4) == 0
+           ) {
+            binary_format = CHAZ_CC_BINFMT_PE;
+        }
+    }
+
+    chaz_CC.binary_format = binary_format;
+    free(output);
 }
 
 static const char chaz_CC_detect_macro_code[] =
@@ -185,7 +286,7 @@ chaz_CC_compile_exe(const char *source_path, const char *exe_name,
     const char *extra_cflags_string = "";
     const char *temp_cflags_string  = "";
     const char *local_cflags_string;
-    char *exe_file = chaz_Util_join("", exe_name, chaz_OS_exe_ext(), NULL);
+    char *exe_file = chaz_Util_join("", exe_name, chaz_CC.exe_ext, NULL);
     char *command;
     int result;
 
@@ -367,6 +468,31 @@ chaz_CC_get_temp_cflags(void) {
 chaz_CFlags*
 chaz_CC_new_cflags(void) {
     return chaz_CFlags_new(chaz_CC.cflags_style);
+}
+
+int
+chaz_CC_binary_format(void) {
+    return chaz_CC.binary_format;
+}
+
+const char*
+chaz_CC_exe_ext(void) {
+    return chaz_CC.exe_ext;
+}
+
+const char*
+chaz_CC_shared_lib_ext(void) {
+    return chaz_CC.shared_lib_ext;
+}
+
+const char*
+chaz_CC_static_lib_ext(void) {
+    return chaz_CC.static_lib_ext;
+}
+
+const char*
+chaz_CC_import_lib_ext(void) {
+    return chaz_CC.import_lib_ext;
 }
 
 const char*
