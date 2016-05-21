@@ -122,7 +122,7 @@ chaz_Make_detect(const char *make1, ...) {
     va_list args;
     const char *candidate;
     int found = 0;
-    const char makefile_content[] = "foo:\n\t@echo \\^foo!\n";
+    const char makefile_content[] = "foo:\n\techo foo\\^bar\n";
     chaz_Util_write_file("_charm_Makefile", makefile_content);
 
     /* Audition candidates. */
@@ -148,11 +148,11 @@ chaz_Make_audition(const char *make) {
     if (chaz_Util_can_open_file("_charm_foo")) {
         size_t len;
         char *content = chaz_Util_slurp_file("_charm_foo", &len);
-        if (strncmp(content, "\\foo!", 5) == 0) {
+        if (NULL != strstr(content, "foo\\bar")) {
             chaz_Make.shell_type = CHAZ_OS_CMD_EXE;
             succeeded = 1;
         }
-        else if (strncmp(content, "^foo!", 5) == 0) {
+        else if (NULL != strstr(content, "foo^bar")) {
             chaz_Make.shell_type = CHAZ_OS_POSIX;
             succeeded = 1;
         }
