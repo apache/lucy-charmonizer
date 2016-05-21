@@ -28,6 +28,10 @@ extern "C" {
 #include "Charmonizer/Core/Defines.h"
 #include "Charmonizer/Core/CFlags.h"
 
+#define CHAZ_CC_BINFMT_ELF      1
+#define CHAZ_CC_BINFMT_MACHO    2
+#define CHAZ_CC_BINFMT_PE       3
+
 /* Attempt to compile and link an executable.  Return true if the executable
  * file exists after the attempt.
  */
@@ -96,6 +100,31 @@ chaz_CC_get_temp_cflags(void);
  */
 chaz_CFlags*
 chaz_CC_new_cflags(void);
+
+/* Return the binary format.
+ */
+int
+chaz_CC_binary_format(void);
+
+/* Return the extension for an executable.
+ */
+const char*
+chaz_CC_exe_ext(void);
+
+/* Return the extension for a shared (dynamic) library.
+ */
+const char*
+chaz_CC_shared_lib_ext(void);
+
+/* Return the extension for a static library.
+ */
+const char*
+chaz_CC_static_lib_ext(void);
+
+/* Return the extension for an import library (Windows).
+ */
+const char*
+chaz_CC_import_lib_ext(void);
 
 /* Return the extension for a compiled object.
  */

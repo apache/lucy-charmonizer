@@ -207,19 +207,15 @@ chaz_CFlags_compile_shared_library(chaz_CFlags *flags) {
         string = "/MD";
     }
     else if (flags->style == CHAZ_CFLAGS_STYLE_GNU) {
-        const char *shlib_ext = chaz_OS_shared_lib_ext();
-        if (strcmp(shlib_ext, ".dylib") == 0) {
+        int binary_format = chaz_CC_binary_format();
+        if (binary_format == CHAZ_CC_BINFMT_MACHO) {
             string = "-fno-common";
         }
-        else if (strcmp(shlib_ext, ".so") == 0) {
+        else if (binary_format == CHAZ_CC_BINFMT_ELF) {
             string = "-fPIC";
         }
-        else if (strcmp(shlib_ext, ".dll") == 0) {
-            /* MinGW */
-            return;
-        }
         else {
-            /* unknown */
+            /* MinGW. */
             return;
         }
     }
@@ -235,7 +231,7 @@ chaz_CFlags_compile_shared_library(chaz_CFlags *flags) {
 void
 chaz_CFlags_hide_symbols(chaz_CFlags *flags) {
     if (flags->style == CHAZ_CFLAGS_STYLE_GNU) {
-        if (strcmp(chaz_OS_shared_lib_ext(), ".dll") != 0) {
+        if (chaz_CC_binary_format() != CHAZ_CC_BINFMT_PE) {
             chaz_CFlags_append(flags, "-fvisibility=hidden");
         }
     }
@@ -254,7 +250,7 @@ chaz_CFlags_link_shared_library(chaz_CFlags *flags) {
         string = "/DLL";
     }
     else if (flags->style == CHAZ_CFLAGS_STYLE_GNU) {
-        if (strcmp(chaz_OS_shared_lib_ext(), ".dylib") == 0) {
+        if (chaz_CC_binary_format() == CHAZ_CC_BINFMT_MACHO) {
             string = "-dynamiclib";
         }
         else {
@@ -274,16 +270,16 @@ chaz_CFlags_link_shared_library(chaz_CFlags *flags) {
 void
 chaz_CFlags_set_shared_library_version(chaz_CFlags *flags, chaz_Lib *lib) {
     if (flags->style == CHAZ_CFLAGS_STYLE_GNU) {
-        const char *shlib_ext = chaz_OS_shared_lib_ext();
+        int binary_format = chaz_CC_binary_format();
 
-        if (strcmp(shlib_ext, ".dylib") == 0) {
+        if (binary_format == CHAZ_CC_BINFMT_MACHO) {
             const char *version = chaz_Lib_get_version(lib);
             char *string
                 = chaz_Util_join(" ", "-current_version", version, NULL);
             chaz_CFlags_append(flags, string);
             free(string);
         }
-        else if (strcmp(shlib_ext, ".so") == 0) {
+        else if (binary_format == CHAZ_CC_BINFMT_ELF) {
             char *soname = chaz_Lib_major_version_filename(lib);
             char *string = chaz_Util_join("", "-Wl,-soname,", soname, NULL);
             chaz_CFlags_append(flags, string);

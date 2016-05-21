@@ -171,7 +171,7 @@ chaz_Make_audition(const char *make) {
 chaz_MakeFile*
 chaz_MakeFile_new() {
     chaz_MakeFile *makefile = (chaz_MakeFile*)malloc(sizeof(chaz_MakeFile));
-    const char    *exe_ext  = chaz_OS_exe_ext();
+    const char    *exe_ext  = chaz_CC_exe_ext();
     const char    *obj_ext  = chaz_CC_obj_ext();
     char *generated;
 
@@ -333,14 +333,14 @@ chaz_MakeFile_add_compiled_exe(chaz_MakeFile *makefile, const char *exe,
 chaz_MakeRule*
 chaz_MakeFile_add_shared_lib(chaz_MakeFile *makefile, chaz_Lib *lib,
                              const char *sources, chaz_CFlags *link_flags) {
-    chaz_CFlags   *local_flags  = chaz_CC_new_cflags();
-    const char    *link         = chaz_CC_link_command();
-    const char    *shlib_ext    = chaz_OS_shared_lib_ext();
-    const char    *link_flags_string = "";
-    const char    *local_flags_string;
+    chaz_CFlags *local_flags = chaz_CC_new_cflags();
+    const char *link = chaz_CC_link_command();
+    const char *link_flags_string = "";
+    const char *local_flags_string;
+    int binfmt = chaz_CC_binary_format();
     chaz_MakeRule *rule;
-    char          *filename;
-    char          *command;
+    char *filename;
+    char *command;
 
     filename = chaz_Lib_filename(lib);
     rule = chaz_MakeFile_add_rule(makefile, filename, sources);
@@ -353,7 +353,7 @@ chaz_MakeFile_add_shared_lib(chaz_MakeFile *makefile, chaz_Lib *lib,
         chaz_CFlags_append(local_flags, "/nologo");
     }
     chaz_CFlags_link_shared_library(local_flags);
-    if (strcmp(shlib_ext, ".dylib") == 0) {
+    if (binfmt == CHAZ_CC_BINFMT_MACHO) {
         /* Set temporary install name with full path on Darwin. */
         const char *dir_sep = chaz_OS_dir_sep();
         char *major_v_name = chaz_Lib_major_version_filename(lib);
@@ -375,7 +375,7 @@ chaz_MakeFile_add_shared_lib(chaz_MakeFile *makefile, chaz_Lib *lib,
     chaz_MakeRule_add_rm_command(makefile->clean, filename);
 
     /* Add symlinks. */
-    if (strcmp(shlib_ext, ".dll") != 0) {
+    if (binfmt == CHAZ_CC_BINFMT_ELF || binfmt == CHAZ_CC_BINFMT_MACHO) {
         char *major_v_name = chaz_Lib_major_version_filename(lib);
         char *no_v_name    = chaz_Lib_no_version_filename(lib);
 
@@ -383,7 +383,7 @@ chaz_MakeFile_add_shared_lib(chaz_MakeFile *makefile, chaz_Lib *lib,
         chaz_MakeRule_add_command(rule, command);
         free(command);
 
-        if (strcmp(shlib_ext, ".dylib") == 0) {
+        if (binfmt == CHAZ_CC_BINFMT_MACHO) {
             command = chaz_Util_join(" ", "ln -sf", filename, no_v_name,
                                      NULL);
         }
@@ -419,7 +419,6 @@ chaz_MakeFile_add_shared_lib(chaz_MakeFile *makefile, chaz_Lib *lib,
 chaz_MakeRule*
 chaz_MakeFile_add_static_lib(chaz_MakeFile *makefile, chaz_Lib *lib,
                              const char *objects) {
-    const char    *shlib_ext    = chaz_OS_shared_lib_ext();
     chaz_MakeRule *rule;
     char          *filename;
     char          *command;
@@ -445,7 +444,7 @@ chaz_MakeFile_add_lemon_exe(chaz_MakeFile *makefile, const char *dir) {
     chaz_CFlags   *cflags = chaz_CC_new_cflags();
     chaz_MakeRule *rule;
     const char *dir_sep = chaz_OS_dir_sep();
-    const char *exe_ext = chaz_OS_exe_ext();
+    const char *exe_ext = chaz_CC_exe_ext();
     char *lemon_exe = chaz_Util_join("", dir, dir_sep, "lemon", exe_ext, NULL);
     char *lemon_c   = chaz_Util_join(dir_sep, dir, "lemon.c", NULL);
 
@@ -676,8 +675,9 @@ chaz_MakeRule_add_command_with_libpath(chaz_MakeRule *rule,
     va_list args;
     char *path        = NULL;
     char *lib_command = NULL;
+    int binfmt = chaz_CC_binary_format();
 
-    if (strcmp(chaz_OS_shared_lib_ext(), ".so") == 0) {
+    if (binfmt == CHAZ_CC_BINFMT_ELF) {
         va_start(args, command);
         path = chaz_Util_vjoin(":", args);
         va_end(args);
@@ -687,7 +687,7 @@ chaz_MakeRule_add_command_with_libpath(chaz_MakeRule *rule,
 
         free(path);
     }
-    else if (strcmp(chaz_OS_shared_lib_ext(), ".dll") == 0) {
+    else if (binfmt == CHAZ_CC_BINFMT_PE) {
         va_start(args, command);
         path = chaz_Util_vjoin(";", args);
         va_end(args);
