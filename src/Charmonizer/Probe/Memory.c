@@ -44,8 +44,8 @@ chaz_Memory_probe_alloca(void) {
         CHAZ_QUOTE(      void *foo = %s(1);         )
         CHAZ_QUOTE(      return 0;                  )
         CHAZ_QUOTE(  }                              );
-    int has_alloca     = false;
-    int has_builtin_alloca    = false;
+    chaz_CFlags *temp_cflags = chaz_CC_get_temp_cflags();
+    int has_alloca = false;
     char code_buf[sizeof(alloca_code) + 100];
 
     {
@@ -62,6 +62,13 @@ chaz_Memory_probe_alloca(void) {
         }
     }
 
+    /* Under GCC, alloca is a builtin that works without including the
+     * correct header, generating only a warning. To avoid misdetection,
+     * disable the alloca builtin temporarily. */
+    if (chaz_CC_gcc_version_num()) {
+        chaz_CFlags_append(temp_cflags, "-fno-builtin-alloca");
+    }
+
     /* Unixen. */
     sprintf(code_buf, alloca_code, "alloca.h", "alloca");
     if (chaz_CC_test_link(code_buf)) {
@@ -70,11 +77,6 @@ chaz_Memory_probe_alloca(void) {
         chaz_ConfWriter_add_def("alloca", "alloca");
     }
     if (!has_alloca) {
-        /*
-         * FIXME: Under MinGW, alloca is defined in malloc.h. This probe
-         * produces compiler warnings but works regardless. These warnings
-         * are subsequently repeated during the build.
-         */
         sprintf(code_buf, alloca_code, "stdlib.h", "alloca");
         if (chaz_CC_test_link(code_buf)) {
             has_alloca = true;
@@ -82,17 +84,9 @@ chaz_Memory_probe_alloca(void) {
             chaz_ConfWriter_add_def("alloca", "alloca");
         }
     }
-    if (!has_alloca) {
-        sprintf(code_buf, alloca_code, "stdio.h", /* stdio.h is filler */
-                "__builtin_alloca");
-        if (chaz_CC_test_link(code_buf)) {
-            has_builtin_alloca = true;
-            chaz_ConfWriter_add_def("alloca", "__builtin_alloca");
-        }
-    }
 
     /* Windows. */
-    if (!(has_alloca || has_builtin_alloca)) {
+    if (!has_alloca) {
         sprintf(code_buf, alloca_code, "malloc.h", "alloca");
         if (chaz_CC_test_link(code_buf)) {
             has_alloca = true;
@@ -100,13 +94,15 @@ chaz_Memory_probe_alloca(void) {
             chaz_ConfWriter_add_def("alloca", "alloca");
         }
     }
-    if (!(has_alloca || has_builtin_alloca)) {
+    if (!has_alloca) {
         sprintf(code_buf, alloca_code, "malloc.h", "_alloca");
         if (chaz_CC_test_link(code_buf)) {
             chaz_ConfWriter_add_def("HAS_MALLOC_H", NULL);
             chaz_ConfWriter_add_def("alloca", "_alloca");
         }
     }
+
+    chaz_CFlags_clear(temp_cflags);
 }
 
 
