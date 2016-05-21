@@ -717,8 +717,8 @@ chaz_MakeRule_add_rm_command(chaz_MakeRule *rule, const char *files) {
         command = chaz_Util_join(" ", "rm -f", files, NULL);
     }
     else if (chaz_Make.shell_type == CHAZ_OS_CMD_EXE) {
-        command = chaz_Util_join("", "for %i in (", files,
-                                 ") do @if exist %i del /f %i", NULL);
+        command = chaz_Util_join("", "for %%i in (", files,
+                                 ") do @if exist %%i del /f %%i", NULL);
     }
     else {
         chaz_Util_die("Unsupported shell type: %d", chaz_Make.shell_type);
@@ -736,8 +736,8 @@ chaz_MakeRule_add_recursive_rm_command(chaz_MakeRule *rule, const char *dirs) {
         command = chaz_Util_join(" ", "rm -rf", dirs, NULL);
     }
     else if (chaz_Make.shell_type == CHAZ_OS_CMD_EXE) {
-        command = chaz_Util_join("", "for %i in (", dirs,
-                                 ") do @if exist %i rmdir /s /q %i", NULL);
+        command = chaz_Util_join("", "for %%i in (", dirs,
+                                 ") do @if exist %%i rmdir /s /q %%i", NULL);
     }
     else {
         chaz_Util_die("Unsupported shell type: %d", chaz_Make.shell_type);
