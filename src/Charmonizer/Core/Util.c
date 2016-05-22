@@ -47,7 +47,7 @@ chaz_Util_write_file(const char *filename, const char *content) {
 
 char*
 chaz_Util_slurp_file(const char *file_path, size_t *len_ptr) {
-    FILE   *const file = fopen(file_path, "r");
+    FILE   *const file = fopen(file_path, "rb");
     char   *contents;
     size_t  len;
     long    check_val;
@@ -220,7 +220,7 @@ chaz_Util_can_open_file(const char *file_path) {
     FILE *garbage_fh;
 
     /* Use fopen as a portable test for the existence of a file. */
-    garbage_fh = fopen(file_path, "r");
+    garbage_fh = fopen(file_path, "rb");
     if (garbage_fh == NULL) {
         return 0;
     }
