@@ -143,6 +143,9 @@ chaz_CC_msvc_version_num(void);
 int
 chaz_CC_sun_c_version_num(void);
 
+int
+chaz_CC_is_cygwin(void);
+
 const char*
 chaz_CC_link_command(void);
 
