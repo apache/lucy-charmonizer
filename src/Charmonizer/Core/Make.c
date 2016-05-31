@@ -688,15 +688,27 @@ chaz_MakeRule_add_command_with_libpath(chaz_MakeRule *rule,
         free(path);
     }
     else if (binfmt == CHAZ_CC_BINFMT_PE) {
-        va_start(args, command);
-        path = chaz_Util_vjoin(";", args);
-        va_end(args);
+        if (chaz_Make.shell_type == CHAZ_OS_CMD_EXE) {
+            va_start(args, command);
+            path = chaz_Util_vjoin(";", args);
+            va_end(args);
 
-        /* It's important to not add a space before `&&`. Otherwise, the
-	 * space is added to the search path.
-	 */
-        lib_command = chaz_Util_join("", "path ", path, ";%path%&& ", command,
-                                     NULL);
+            /* It's important to not add a space before `&&`. Otherwise, the
+             * space is added to the search path.
+             */
+            lib_command = chaz_Util_join("", "path ", path, ";%path%&& ",
+                                         command, NULL);
+        }
+        else {
+            va_start(args, command);
+            path = chaz_Util_vjoin(":", args);
+            va_end(args);
+
+            lib_command = chaz_Util_join("", "PATH=", path, ":$$PATH ",
+                                         command, NULL);
+        }
+
+        free(path);
     }
     else {
         /* Assume that library paths are compiled into the executable on
