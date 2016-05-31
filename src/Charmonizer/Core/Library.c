@@ -33,7 +33,7 @@ static char*
 S_build_filename(chaz_Lib *lib, const char *version, const char *ext);
 
 static const char*
-S_get_prefix(void);
+S_get_prefix(chaz_Lib *lib);
 
 chaz_Lib*
 chaz_Lib_new_shared(const char *name, const char *version,
@@ -120,7 +120,7 @@ chaz_Lib_major_version_filename(chaz_Lib *lib) {
 
 char*
 chaz_Lib_no_version_filename(chaz_Lib *lib) {
-    const char *prefix = S_get_prefix();
+    const char *prefix = S_get_prefix(lib);
     const char *ext = lib->is_shared
                       ? chaz_CC_shared_lib_ext()
                       : chaz_CC_static_lib_ext();
@@ -140,7 +140,7 @@ chaz_Lib_export_filename(chaz_Lib *lib) {
 
 static char*
 S_build_filename(chaz_Lib *lib, const char *version, const char *ext) {
-    const char *prefix = S_get_prefix();
+    const char *prefix = S_get_prefix(lib);
     int binary_format = chaz_CC_binary_format();
 
     if (binary_format == CHAZ_CC_BINFMT_PE) {
@@ -159,14 +159,13 @@ S_build_filename(chaz_Lib *lib, const char *version, const char *ext) {
 }
 
 static const char*
-S_get_prefix() {
+S_get_prefix(chaz_Lib *lib) {
     if (chaz_CC_msvc_version_num()) {
         return "";
     }
-    /* TODO: Readd Cygwin detection. */
-    /*else if (chaz_OS_is_cygwin()) {
-        return "cyg";
-    }*/
+    else if (chaz_CC_is_cygwin()) {
+        return lib->is_static ? "lib" : "cyg";
+    }
     else {
         return "lib";
     }

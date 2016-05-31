@@ -27,6 +27,11 @@
 static void
 chaz_CC_detect_binary_format(const char *filename);
 
+/** Return the numeric value of a macro or 0 if it isn't defined.
+ */
+static int
+chaz_CC_eval_macro(const char *macro);
+
 /* Detect macros which may help to identify some compilers.
  */
 static void
@@ -56,12 +61,13 @@ static struct {
     int       intval__MSC_VER;
     int       intval___clang__;
     int       intval___SUNPRO_C;
+    int       is_cygwin;
     chaz_CFlags *extra_cflags;
     chaz_CFlags *temp_cflags;
 } chaz_CC = {
     NULL, NULL, NULL,
     "", "", "", "", "", "",
-    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0,
     NULL, NULL
 };
 
@@ -167,6 +173,10 @@ chaz_CC_init(const char *compiler_command, const char *compiler_flags) {
             strcpy(chaz_CC.import_lib_ext, ".lib");
             strcpy(chaz_CC.obj_ext, ".obj");
         }
+
+        if (chaz_CC_has_macro("__CYGWIN__")) {
+            chaz_CC.is_cygwin = 1;
+        }
     }
     else {
         chaz_Util_die("Failed to detect binary format");
@@ -224,7 +234,7 @@ chaz_CC_detect_binary_format(const char *filename) {
     free(output);
 }
 
-static const char chaz_CC_detect_macro_code[] =
+static const char chaz_CC_eval_macro_code[] =
     CHAZ_QUOTE(  #include <stdio.h>             )
     CHAZ_QUOTE(  int main() {                   )
     CHAZ_QUOTE(  #ifndef %s                     )
@@ -235,15 +245,15 @@ static const char chaz_CC_detect_macro_code[] =
     CHAZ_QUOTE(  }                              );
 
 static int
-chaz_CC_detect_macro(const char *macro) {
-    size_t size = sizeof(chaz_CC_detect_macro_code)
+chaz_CC_eval_macro(const char *macro) {
+    size_t size = sizeof(chaz_CC_eval_macro_code)
                   + (strlen(macro) * 2)
                   + 20;
     char *code = (char*)malloc(size);
     int retval = 0;
     char *output;
     size_t len;
-    sprintf(code, chaz_CC_detect_macro_code, macro, macro);
+    sprintf(code, chaz_CC_eval_macro_code, macro, macro);
     output = chaz_CC_capture_output(code, &len);
     if (output) {
         retval = atoi(output);
@@ -253,21 +263,34 @@ chaz_CC_detect_macro(const char *macro) {
     return retval;
 }
 
+int
+chaz_CC_has_macro(const char *macro) {
+    size_t size = sizeof(chaz_CC_eval_macro_code)
+                  + (strlen(macro) * 2)
+                  + 20;
+    char *code = (char*)malloc(size);
+    int retval = 0;
+    sprintf(code, chaz_CC_eval_macro_code, macro, macro);
+    retval = chaz_CC_test_compile(code);
+    free(code);
+    return retval;
+}
+
 static void
 chaz_CC_detect_known_compilers(void) {
-    chaz_CC.intval___GNUC__  = chaz_CC_detect_macro("__GNUC__");
+    chaz_CC.intval___GNUC__  = chaz_CC_eval_macro("__GNUC__");
     if (chaz_CC.intval___GNUC__) {
         chaz_CC.intval___GNUC_MINOR__
-            = chaz_CC_detect_macro("__GNUC_MINOR__");
+            = chaz_CC_eval_macro("__GNUC_MINOR__");
         chaz_CC.intval___GNUC_PATCHLEVEL__
-            = chaz_CC_detect_macro("__GNUC_PATCHLEVEL__");
+            = chaz_CC_eval_macro("__GNUC_PATCHLEVEL__");
         sprintf(chaz_CC.gcc_version_str, "%d.%d.%d", chaz_CC.intval___GNUC__,
                 chaz_CC.intval___GNUC_MINOR__,
                 chaz_CC.intval___GNUC_PATCHLEVEL__);
     }
-    chaz_CC.intval__MSC_VER   = chaz_CC_detect_macro("_MSC_VER");
-    chaz_CC.intval___clang__  = chaz_CC_detect_macro("__clang__");
-    chaz_CC.intval___SUNPRO_C = chaz_CC_detect_macro("__SUNPRO_C");
+    chaz_CC.intval__MSC_VER   = chaz_CC_eval_macro("_MSC_VER");
+    chaz_CC.intval___clang__  = chaz_CC_eval_macro("__clang__");
+    chaz_CC.intval___SUNPRO_C = chaz_CC_eval_macro("__SUNPRO_C");
 }
 
 void
@@ -520,6 +543,11 @@ chaz_CC_msvc_version_num(void) {
 int
 chaz_CC_sun_c_version_num(void) {
     return chaz_CC.intval___SUNPRO_C;
+}
+
+int
+chaz_CC_is_cygwin(void) {
+    return chaz_CC.is_cygwin;
 }
 
 const char*
