@@ -32,11 +32,6 @@ chaz_CC_detect_binary_format(const char *filename);
 static int
 chaz_CC_eval_macro(const char *macro);
 
-/** Return true if macro is defined.
- */
-static int
-chaz_CC_has_macro(const char *macro);
-
 /* Detect macros which may help to identify some compilers.
  */
 static void
@@ -268,7 +263,7 @@ chaz_CC_eval_macro(const char *macro) {
     return retval;
 }
 
-static int
+int
 chaz_CC_has_macro(const char *macro) {
     size_t size = sizeof(chaz_CC_eval_macro_code)
                   + (strlen(macro) * 2)

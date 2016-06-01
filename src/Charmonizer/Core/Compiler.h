@@ -66,6 +66,11 @@ chaz_CC_test_link(const char *source);
 char*
 chaz_CC_capture_output(const char *source, size_t *output_len);
 
+/** Return true if macro is defined.
+ */
+int
+chaz_CC_has_macro(const char *macro);
+
 /** Initialize the compiler environment.
  */
 void
