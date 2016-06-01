@@ -35,7 +35,11 @@ static struct {
     char dir_sep[2];
     char local_command_start[3];
     int  shell_type;
-} chaz_OS = { "", "", "", "", 0 };
+    int  run_sh_via_cmd_exe;
+} chaz_OS = { "", "", "", "", 0, 0 };
+
+static int
+chaz_OS_run_sh_via_cmd_exe(const char *command);
 
 void
 chaz_OS_init(void) {
@@ -58,11 +62,27 @@ chaz_OS_init(void) {
         if (chaz_Util_verbosity) {
             printf("Detected cmd.exe shell\n");
         }
-        chaz_OS.shell_type = CHAZ_OS_CMD_EXE;
-        strcpy(chaz_OS.dir_sep, "\\");
-        strcpy(chaz_OS.dev_null, "nul");
-        /* Empty string should work, too. */
-        strcpy(chaz_OS.local_command_start, ".\\");
+
+        /* Try to see whether running commands via the `sh` command works.
+         * Run the `find` command to check whether we're in a somewhat POSIX
+         * compatible environment. */
+        free(output);
+        chaz_OS.run_sh_via_cmd_exe = 1;
+        output = chaz_OS_run_and_capture("find . -prune", &output_len);
+
+        if (output_len >= 2
+            && output[0] == '.'
+            && isspace((unsigned char)output[1])
+           ) {
+            if (chaz_Util_verbosity) {
+                printf("Detected POSIX shell via cmd.exe\n");
+            }
+            chaz_OS.shell_type = CHAZ_OS_POSIX;
+        }
+        else {
+            chaz_OS.shell_type = CHAZ_OS_CMD_EXE;
+            chaz_OS.run_sh_via_cmd_exe = 0;
+        }
     }
     else if (output_len >= 7 && memcmp(output, "foo^bar", 7) == 0) {
         /* Escape character is backslash. */
@@ -70,6 +90,15 @@ chaz_OS_init(void) {
             printf("Detected POSIX shell\n");
         }
         chaz_OS.shell_type = CHAZ_OS_POSIX;
+    }
+
+    if (chaz_OS.shell_type == CHAZ_OS_CMD_EXE) {
+        strcpy(chaz_OS.dir_sep, "\\");
+        strcpy(chaz_OS.dev_null, "nul");
+        /* Empty string should work, too. */
+        strcpy(chaz_OS.local_command_start, ".\\");
+    }
+    else if (chaz_OS.shell_type == CHAZ_OS_POSIX) {
         strcpy(chaz_OS.dir_sep, "/");
         strcpy(chaz_OS.dev_null, "/dev/null");
         strcpy(chaz_OS.local_command_start, "./");
@@ -177,8 +206,91 @@ chaz_OS_run_redirected(const char *command, const char *path) {
     else {
         chaz_Util_die("Don't know the shell type");
     }
-    retval = system(quiet_command);
+    if (chaz_OS.run_sh_via_cmd_exe) {
+        retval = chaz_OS_run_sh_via_cmd_exe(quiet_command);
+    }
+    else {
+        retval = system(quiet_command);
+    }
     free(quiet_command);
+    return retval;
+}
+
+static int
+chaz_OS_run_sh_via_cmd_exe(const char *command) {
+    size_t i;
+    size_t size;
+    char *sh_command;
+    char *p;
+    int retval;
+
+    /* Compute size. */
+
+    size = sizeof("sh -c \"\"");
+
+    for (i = 0; command[i] != '\0'; i++) {
+        char c = command[i];
+
+        switch (c) {
+            case '"':
+            case '\\':
+                size += 2;
+                break;
+
+            case '%':
+            case '!':
+                size += 3;
+                break;
+
+            default:
+                size += 1;
+                break;
+        }
+    }
+
+    /* Build sh command. */
+
+    sh_command = (char*)malloc(size);
+    p = sh_command;
+    memcpy(p, "sh -c \"", 7);
+    p += 7;
+
+    /* Escape special characters. */
+
+    for (i = 0; command[i] != '\0'; i++) {
+        char c = command[i];
+
+        switch (c) {
+            case '"':
+            case '\\':
+                /* Escape double quote and backslash. */
+                *p++ = '\\';
+                *p++ = c;
+                break;
+
+            case '%':
+            case '!':
+                /* Break out of double quotes for percent sign and
+                 * exclamation mark. This prevents variable expansion. */
+                *p++ = '"';
+                *p++ = c;
+                *p++ = '"';
+                break;
+
+            default:
+                *p++ = c;
+                break;
+        }
+    }
+
+    /* Finish and run sh command. */
+
+    *p++ = '"';
+    *p++ = '\0';
+
+    retval = system(sh_command);
+
+    free(sh_command);
     return retval;
 }
 
