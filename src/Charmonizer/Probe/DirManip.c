@@ -119,7 +119,6 @@ chaz_DirManip_try_rmdir(void) {
 
 void
 chaz_DirManip_run(void) {
-    const char *dir_sep = chaz_OS_dir_sep();
     int has_dirent_h = chaz_HeadCheck_check_header("dirent.h");
     int has_direct_h = chaz_HeadCheck_check_header("direct.h");
     int has_dirent_d_namlen = false;
@@ -176,16 +175,13 @@ chaz_DirManip_run(void) {
         chaz_ConfWriter_add_def("MAKEDIR_MODE_IGNORED", "1");
     }
 
-    if (strcmp(dir_sep, "\\") == 0) {
+    if (chaz_CC_has_macro("_WIN32") && !chaz_CC_is_cygwin()) {
         chaz_ConfWriter_add_def("DIR_SEP", "\"\\\\\"");
         chaz_ConfWriter_add_def("DIR_SEP_CHAR", "'\\\\'");
     }
     else {
-        char scratch[5];
-        sprintf(scratch, "\"%s\"", dir_sep);
-        chaz_ConfWriter_add_def("DIR_SEP", scratch);
-        sprintf(scratch, "'%s'", dir_sep);
-        chaz_ConfWriter_add_def("DIR_SEP_CHAR", scratch);
+        chaz_ConfWriter_add_def("DIR_SEP", "\"/\"");
+        chaz_ConfWriter_add_def("DIR_SEP_CHAR", "'/'");
     }
 
     /* See whether remove works on directories. */
