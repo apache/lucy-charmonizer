@@ -63,13 +63,17 @@ chaz_OS_init(void) {
             printf("Detected cmd.exe shell\n");
         }
 
-        /* Try to see whether running commands via a hopefully POSIX
-         * compatible `sh` command works. */
+        /* Try to see whether running commands via the `sh` command works.
+         * Run the `find` command to check whether we're in a somewhat POSIX
+         * compatible environment. */
         free(output);
         chaz_OS.run_sh_via_cmd_exe = 1;
-        output = chaz_OS_run_and_capture("echo foo\\^bar", &output_len);
+        output = chaz_OS_run_and_capture("find . -prune", &output_len);
 
-        if (output_len >= 7 && memcmp(output, "foo^bar", 7) == 0) {
+        if (output_len >= 2
+            && output[0] == '.'
+            && isspace((unsigned char)output[1])
+           ) {
             if (chaz_Util_verbosity) {
                 printf("Detected POSIX shell via cmd.exe\n");
             }
