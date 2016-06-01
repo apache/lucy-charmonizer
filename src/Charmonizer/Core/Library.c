@@ -33,7 +33,7 @@ static char*
 S_build_filename(chaz_Lib *lib, const char *version, const char *ext);
 
 static const char*
-S_get_prefix(void);
+S_get_prefix(chaz_Lib *lib);
 
 chaz_Lib*
 chaz_Lib_new_shared(const char *name, const char *version,
@@ -97,8 +97,8 @@ chaz_Lib_filename(chaz_Lib *lib) {
         return chaz_Lib_no_version_filename(lib);
     }
     else {
-        const char *ext = chaz_OS_shared_lib_ext();
-        if (strcmp(ext, ".dll") == 0) {
+        const char *ext = chaz_CC_shared_lib_ext();
+        if (chaz_CC_binary_format() == CHAZ_CC_BINFMT_PE) {
             return S_build_filename(lib, lib->major_version, ext);
         }
         else {
@@ -113,23 +113,24 @@ chaz_Lib_major_version_filename(chaz_Lib *lib) {
         return chaz_Lib_no_version_filename(lib);
     }
     else {
-        const char *ext = chaz_OS_shared_lib_ext();
+        const char *ext = chaz_CC_shared_lib_ext();
         return S_build_filename(lib, lib->major_version, ext);
     }
 }
 
 char*
 chaz_Lib_no_version_filename(chaz_Lib *lib) {
-    const char *prefix = S_get_prefix();
+    const char *prefix = S_get_prefix(lib);
     const char *ext = lib->is_shared
-                      ? chaz_OS_shared_lib_ext()
-                      : chaz_OS_static_lib_ext();
+                      ? chaz_CC_shared_lib_ext()
+                      : chaz_CC_static_lib_ext();
     return chaz_Util_join("", prefix, lib->name, ext, NULL);
 }
 
 char*
 chaz_Lib_implib_filename(chaz_Lib *lib) {
-    return S_build_filename(lib, lib->major_version, ".lib");
+    const char *ext = chaz_CC_import_lib_ext();
+    return S_build_filename(lib, lib->major_version, ext);
 }
 
 char*
@@ -139,29 +140,31 @@ chaz_Lib_export_filename(chaz_Lib *lib) {
 
 static char*
 S_build_filename(chaz_Lib *lib, const char *version, const char *ext) {
-    const char *prefix    = S_get_prefix();
-    const char *shlib_ext = chaz_OS_shared_lib_ext();
+    const char *prefix = S_get_prefix(lib);
+    int binary_format = chaz_CC_binary_format();
 
-    /* Use `shlib_ext` as a proxy for OS to determine behavior, but append
-     * the supplied `ext`. */
-    if (strcmp(shlib_ext, ".dll") == 0) {
+    if (binary_format == CHAZ_CC_BINFMT_PE) {
         return chaz_Util_join("", prefix, lib->name, "-", version, ext, NULL);
     }
-    else if (strcmp(shlib_ext, ".dylib") == 0) {
+    else if (binary_format == CHAZ_CC_BINFMT_MACHO) {
         return chaz_Util_join("", prefix, lib->name, ".", version, ext, NULL);
     }
-    else {
+    else if (binary_format == CHAZ_CC_BINFMT_ELF) {
         return chaz_Util_join("", prefix, lib->name, ext, ".", version, NULL);
+    }
+    else {
+        chaz_Util_die("Unsupported binary format");
+        return NULL;
     }
 }
 
 static const char*
-S_get_prefix() {
+S_get_prefix(chaz_Lib *lib) {
     if (chaz_CC_msvc_version_num()) {
         return "";
     }
-    else if (chaz_OS_is_cygwin()) {
-        return "cyg";
+    else if (chaz_CC_is_cygwin()) {
+        return lib->is_static ? "lib" : "cyg";
     }
     else {
         return "lib";

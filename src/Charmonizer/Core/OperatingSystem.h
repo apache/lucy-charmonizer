@@ -68,32 +68,6 @@ chaz_OS_mkdir(const char *filepath);
 void
 chaz_OS_rmdir(const char *filepath);
 
-/* Return the operating system name.
- */
-const char*
-chaz_OS_name(void);
-
-int
-chaz_OS_is_darwin(void);
-
-int
-chaz_OS_is_cygwin(void);
-
-/* Return the extension for an executable on this system.
- */
-const char*
-chaz_OS_exe_ext(void);
-
-/* Return the extension for a shared object on this system.
- */
-const char*
-chaz_OS_shared_lib_ext(void);
-
-/* Return the extension for a static library on this system.
- */
-const char*
-chaz_OS_static_lib_ext(void);
-
 /* Return the equivalent of /dev/null on this system.
  */
 const char*
