@@ -53,7 +53,7 @@ chaz_OS_init(void) {
 
     output = chaz_OS_run_and_capture("echo foo\\^bar", &output_len);
 
-    if (strncmp(output, "foo\\bar", 7) == 0) {
+    if (output_len >= 7 && memcmp(output, "foo\\bar", 7) == 0) {
         /* Escape character is caret. */
         if (chaz_Util_verbosity) {
             printf("Detected cmd.exe shell\n");
@@ -64,7 +64,7 @@ chaz_OS_init(void) {
         /* Empty string should work, too. */
         strcpy(chaz_OS.local_command_start, ".\\");
     }
-    else if (strncmp(output, "foo^bar", 7) == 0) {
+    else if (output_len >= 7 && memcmp(output, "foo^bar", 7) == 0) {
         /* Escape character is backslash. */
         if (chaz_Util_verbosity) {
             printf("Detected POSIX shell\n");
