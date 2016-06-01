@@ -80,6 +80,8 @@ S_write_rule(chaz_MakeRule *rule, FILE *out);
 
 void
 chaz_Make_init(const char *make_command) {
+    chaz_Make.shell_type = chaz_OS_shell_type();
+
     if (make_command) {
         if (!chaz_Make_detect(make_command, NULL)) {
             chaz_Util_warn("Make utility '%s' doesn't appear to work");
@@ -94,11 +96,6 @@ chaz_Make_init(const char *make_command) {
         else if (chaz_Util_verbosity) {
             printf("Detected make utility '%s'\n", chaz_Make.make_command);
         }
-    }
-
-    if (chaz_Make.shell_type == 0) {
-        // Assume POSIX.
-        chaz_Make.shell_type = CHAZ_OS_POSIX;
     }
 }
 
@@ -149,12 +146,14 @@ chaz_Make_audition(const char *make) {
         size_t len;
         char *content = chaz_Util_slurp_file("_charm_foo", &len);
         if (NULL != strstr(content, "foo\\bar")) {
-            chaz_Make.shell_type = CHAZ_OS_CMD_EXE;
-            succeeded = 1;
+            if (chaz_Make.shell_type == CHAZ_OS_CMD_EXE) {
+                succeeded = 1;
+            }
         }
         else if (NULL != strstr(content, "foo^bar")) {
-            chaz_Make.shell_type = CHAZ_OS_POSIX;
-            succeeded = 1;
+            if (chaz_Make.shell_type == CHAZ_OS_POSIX) {
+                succeeded = 1;
+            }
         }
         free(content);
     }
