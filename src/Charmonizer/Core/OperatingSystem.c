@@ -39,7 +39,7 @@ static struct {
 } chaz_OS = { "", "", "", "", 0, 0 };
 
 static int
-chaz_OS_run_sh_via_cmd_exe(const char *command);
+chaz_OS_run_sh_via_cmd_exe(const char *command, const char *path);
 
 void
 chaz_OS_init(void) {
@@ -198,6 +198,9 @@ int
 chaz_OS_run_redirected(const char *command, const char *path) {
     int retval = 1;
     char *quiet_command = NULL;
+    if (chaz_OS.run_sh_via_cmd_exe) {
+        return chaz_OS_run_sh_via_cmd_exe(command, path);
+    }
     if (chaz_OS.shell_type == CHAZ_OS_POSIX
         || chaz_OS.shell_type == CHAZ_OS_CMD_EXE
         ) {
@@ -206,27 +209,23 @@ chaz_OS_run_redirected(const char *command, const char *path) {
     else {
         chaz_Util_die("Don't know the shell type");
     }
-    if (chaz_OS.run_sh_via_cmd_exe) {
-        retval = chaz_OS_run_sh_via_cmd_exe(quiet_command);
-    }
-    else {
-        retval = system(quiet_command);
-    }
+    retval = system(quiet_command);
     free(quiet_command);
     return retval;
 }
 
 static int
-chaz_OS_run_sh_via_cmd_exe(const char *command) {
+chaz_OS_run_sh_via_cmd_exe(const char *command, const char *path) {
     size_t i;
     size_t size;
-    char *sh_command;
+    char *escaped_command;
+    char *wrapped_command;
     char *p;
     int retval;
 
     /* Compute size. */
 
-    size = sizeof("sh -c \"\"");
+    size = 0;
 
     for (i = 0; command[i] != '\0'; i++) {
         char c = command[i];
@@ -250,10 +249,8 @@ chaz_OS_run_sh_via_cmd_exe(const char *command) {
 
     /* Build sh command. */
 
-    sh_command = (char*)malloc(size);
-    p = sh_command;
-    memcpy(p, "sh -c \"", 7);
-    p += 7;
+    escaped_command = (char*)malloc(size + 1);
+    p = escaped_command;
 
     /* Escape special characters. */
 
@@ -283,14 +280,16 @@ chaz_OS_run_sh_via_cmd_exe(const char *command) {
         }
     }
 
-    /* Finish and run sh command. */
-
-    *p++ = '"';
     *p++ = '\0';
 
-    retval = system(sh_command);
+    /* Run sh command. */
 
-    free(sh_command);
+    wrapped_command = chaz_Util_join("", "sh -c \"", escaped_command, "\" > ",
+                                     path, " 2>&1", NULL);
+    retval = system(wrapped_command);
+
+    free(wrapped_command);
+    free(escaped_command);
     return retval;
 }
 
