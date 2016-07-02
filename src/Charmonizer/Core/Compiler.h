@@ -169,6 +169,44 @@ chaz_CC_format_archiver_command(const char *target, const char *objects);
 char*
 chaz_CC_format_ranlib_command(const char *target);
 
+/** Returns the filename for a shared library.
+ *
+ * @param dir The target directory or NULL for the current directory.
+ * @param basename The name of the library without prefix and extension.
+ * @param version The library version.
+ */
+char*
+chaz_CC_shared_lib_filename(const char *dir, const char *basename,
+                            const char *version);
+
+/** Returns the filename for an import library.
+ *
+ * @param dir The target directory or NULL for the current directory.
+ * @param basename The name of the library without prefix and extension.
+ * @param version The library version.
+ */
+char*
+chaz_CC_import_lib_filename(const char *dir, const char *basename,
+                            const char *version);
+
+/** Returns the filename for an MSVC export file.
+ *
+ * @param dir The target directory or NULL for the current directory.
+ * @param basename The name of the library without prefix and extension.
+ * @param version The library version.
+ */
+char*
+chaz_CC_export_filename(const char *dir, const char *basename,
+                        const char *version);
+
+/** Returns the filename for a static library.
+ *
+ * @param dir The target directory or NULL for the current directory.
+ * @param basename The name of the library without prefix and extension.
+ */
+char*
+chaz_CC_static_lib_filename(const char *dir, const char *basename);
+
 #ifdef __cplusplus
 }
 #endif

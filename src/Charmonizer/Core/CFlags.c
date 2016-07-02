@@ -20,7 +20,6 @@
 #include "Charmonizer/Core/Compiler.h"
 #include "Charmonizer/Core/Util.h"
 #include "Charmonizer/Core/OperatingSystem.h"
-#include "Charmonizer/Core/Library.h"
 
 struct chaz_CFlags {
     int   style;
@@ -244,55 +243,44 @@ chaz_CFlags_hide_symbols(chaz_CFlags *flags) {
 }
 
 void
-chaz_CFlags_link_shared_library(chaz_CFlags *flags) {
-    const char *string;
+chaz_CFlags_link_shared_library(chaz_CFlags *flags, const char *basename,
+                                const char *version,
+                                const char *major_version) {
+    char *string = NULL;
+
     if (flags->style == CHAZ_CFLAGS_STYLE_MSVC) {
-        string = "/DLL";
+        string = chaz_Util_strdup("/DLL");
     }
     else if (flags->style == CHAZ_CFLAGS_STYLE_GNU) {
-        if (chaz_CC_binary_format() == CHAZ_CC_BINFMT_MACHO) {
-            string = "-dynamiclib";
+        int binary_format = chaz_CC_binary_format();
+
+        if (binary_format == CHAZ_CC_BINFMT_MACHO) {
+            string = chaz_Util_join(" ", "-dynamiclib", "-current_version",
+                                    version, "-compatibility_version",
+                                    major_version, NULL);
         }
-        else {
-            string = "-shared";
+        else if (binary_format == CHAZ_CC_BINFMT_ELF) {
+            string = chaz_Util_join("", "-shared -Wl,-soname,lib", basename,
+                                    ".so.", major_version, NULL);
+        }
+        else if (binary_format == CHAZ_CC_BINFMT_PE) {
+            string = chaz_Util_join("", "-shared -Wl,--out-implib,lib",
+                                    basename, "-", major_version, ".dll.a",
+                                    NULL);
         }
     }
     else if (flags->style == CHAZ_CFLAGS_STYLE_SUN_C) {
-        string = "-G";
+        string = chaz_Util_join("", "-G -h lib", basename, ".so.",
+                                major_version, NULL);
     }
     else {
         chaz_Util_die("Don't know how to link a shared library with '%s'",
                       chaz_CC_get_cc());
     }
-    chaz_CFlags_append(flags, string);
-}
 
-void
-chaz_CFlags_set_shared_library_version(chaz_CFlags *flags, chaz_Lib *lib) {
-    if (flags->style == CHAZ_CFLAGS_STYLE_GNU) {
-        int binary_format = chaz_CC_binary_format();
-
-        if (binary_format == CHAZ_CC_BINFMT_MACHO) {
-            const char *version = chaz_Lib_get_version(lib);
-            char *string
-                = chaz_Util_join(" ", "-current_version", version, NULL);
-            chaz_CFlags_append(flags, string);
-            free(string);
-        }
-        else if (binary_format == CHAZ_CC_BINFMT_ELF) {
-            char *soname = chaz_Lib_major_version_filename(lib);
-            char *string = chaz_Util_join("", "-Wl,-soname,", soname, NULL);
-            chaz_CFlags_append(flags, string);
-            free(string);
-            free(soname);
-        }
-    }
-    else if (flags->style == CHAZ_CFLAGS_STYLE_SUN_C) {
-        char *soname = chaz_Lib_major_version_filename(lib);
-        char *string = chaz_Util_join(" ", "-h", soname, NULL);
+    if (string) {
         chaz_CFlags_append(flags, string);
         free(string);
-        free(soname);
     }
 }
 
@@ -333,20 +321,22 @@ chaz_CFlags_add_library_path(chaz_CFlags *flags, const char *directory) {
 }
 
 void
-chaz_CFlags_add_library(chaz_CFlags *flags, chaz_Lib *lib) {
+chaz_CFlags_add_shared_lib(chaz_CFlags *flags, const char *dir,
+                           const char *basename, const char *major_version) {
+    int binfmt = chaz_CC_binary_format();
     char *filename;
-    if (flags->style == CHAZ_CFLAGS_STYLE_MSVC) {
-        filename = chaz_Lib_implib_filename(lib);
+    if (binfmt == CHAZ_CC_BINFMT_PE) {
+        filename = chaz_CC_import_lib_filename(dir, basename, major_version);
     }
     else {
-        filename = chaz_Lib_filename(lib);
+        filename = chaz_CC_shared_lib_filename(dir, basename, major_version);
     }
     chaz_CFlags_append(flags, filename);
     free(filename);
 }
 
 void
-chaz_CFlags_add_external_library(chaz_CFlags *flags, const char *library) {
+chaz_CFlags_add_external_lib(chaz_CFlags *flags, const char *library) {
     char *string;
     if (flags->style == CHAZ_CFLAGS_STYLE_MSVC) {
         string = chaz_Util_join("", library, ".lib", NULL);

@@ -24,8 +24,6 @@
 extern "C" {
 #endif
 
-#include "Charmonizer/Core/Library.h"
-
 #define CHAZ_CFLAGS_STYLE_POSIX  1
 #define CHAZ_CFLAGS_STYLE_GNU    2
 #define CHAZ_CFLAGS_STYLE_MSVC   3
@@ -77,10 +75,9 @@ void
 chaz_CFlags_hide_symbols(chaz_CFlags *flags);
 
 void
-chaz_CFlags_link_shared_library(chaz_CFlags *flags);
-
-void
-chaz_CFlags_set_shared_library_version(chaz_CFlags *flags, chaz_Lib *lib);
+chaz_CFlags_link_shared_library(chaz_CFlags *flags, const char *basename,
+                                const char *version,
+                                const char *major_version);
 
 void
 chaz_CFlags_set_link_output(chaz_CFlags *flags, const char *filename);
@@ -89,10 +86,11 @@ void
 chaz_CFlags_add_library_path(chaz_CFlags *flags, const char *directory);
 
 void
-chaz_CFlags_add_library(chaz_CFlags *flags, chaz_Lib *lib);
+chaz_CFlags_add_shared_lib(chaz_CFlags *flags, const char *dir,
+                           const char *basename, const char *major_version);
 
 void
-chaz_CFlags_add_external_library(chaz_CFlags *flags, const char *library);
+chaz_CFlags_add_external_lib(chaz_CFlags *flags, const char *library);
 
 void
 chaz_CFlags_enable_code_coverage(chaz_CFlags *flags);

@@ -25,11 +25,11 @@ extern "C" {
 #endif
 
 #include "Charmonizer/Core/CFlags.h"
-#include "Charmonizer/Core/Library.h"
 
 typedef struct chaz_MakeFile chaz_MakeFile;
 typedef struct chaz_MakeVar chaz_MakeVar;
 typedef struct chaz_MakeRule chaz_MakeRule;
+typedef struct chaz_MakeBinary chaz_MakeBinary;
 
 typedef void (*chaz_Make_list_files_callback_t)(const char *dir, char *file,
                                                 void *context);
@@ -117,59 +117,44 @@ chaz_MakeFile_clean_rule(chaz_MakeFile *makefile);
 chaz_MakeRule*
 chaz_MakeFile_distclean_rule(chaz_MakeFile *makefile);
 
-/** Add a rule to link an executable. The executable will also be added to the
- * list of files to clean.
+/** Add an executable. Returns a chaz_MakeBinary object.
  *
- * @param makefile The makefile.
- * @param exe The name of the executable.
- * @param sources The list of source files.
- * @param link_flags Additional link flags.
+ * @param dir The target directory or NULL for the current directory.
+ * @param basename The name of the executable without extension.
  */
-chaz_MakeRule*
-chaz_MakeFile_add_exe(chaz_MakeFile *makefile, const char *exe,
-                      const char *sources, chaz_CFlags *link_flags);
+chaz_MakeBinary*
+chaz_MakeFile_add_exe(chaz_MakeFile *self, const char *dir,
+                      const char *basename);
 
-/** Add a rule to compile and link an executable. The executable will also be
- * added to the list of files to clean.
+/** Add a shared library. The library will be built in the current directory.
+ * Returns a chaz_MakeBinary object.
  *
- * @param makefile The makefile.
- * @param exe The name of the executable.
- * @param sources The list of source files.
- * @param cflags Additional compiler flags.
+ * @param dir The target directory or NULL for the current directory.
+ * @param basename The name of the library without prefix and extension.
+ * @param version The version of the library.
+ * @param major_version The major version of the library.
  */
-chaz_MakeRule*
-chaz_MakeFile_add_compiled_exe(chaz_MakeFile *makefile, const char *exe,
-                               const char *sources, chaz_CFlags *cflags);
+chaz_MakeBinary*
+chaz_MakeFile_add_shared_lib(chaz_MakeFile *self, const char *dir,
+                             const char *basename, const char *version,
+                             const char *major_version);
 
-/** Add a rule to link a shared library. The shared library will also be added
- * to the list of files to clean.
+/** Add a static library. The library will be built in the current directory.
+ * Returns a chaz_MakeBinary object.
  *
- * @param makefile The makefile.
- * @param lib The shared library.
- * @param sources The list of source files.
- * @param link_flags Additional link flags.
+ * @param dir The target directory or NULL for the current directory.
+ * @param basename The name of the library without prefix and extension.
  */
-chaz_MakeRule*
-chaz_MakeFile_add_shared_lib(chaz_MakeFile *makefile, chaz_Lib *lib,
-                             const char *sources, chaz_CFlags *link_flags);
-
-/** Add a rule to create a static library. The static library will also be added
- * to the list of files to clean.
- *
- * @param makefile The makefile.
- * @param lib The static library.
- * @param objects The list of object files to be archived.
- */
-chaz_MakeRule*
-chaz_MakeFile_add_static_lib(chaz_MakeFile *makefile, chaz_Lib *lib,
-                             const char *objects);
+chaz_MakeBinary*
+chaz_MakeFile_add_static_lib(chaz_MakeFile *self, const char *dir,
+                             const char *basename);
 
 /** Add a rule to build the lemon parser generator.
  *
  * @param makefile The makefile.
  * @param dir The lemon directory.
  */
-chaz_MakeRule*
+chaz_MakeBinary*
 chaz_MakeFile_add_lemon_exe(chaz_MakeFile *makefile, const char *dir);
 
 /** Add a rule for a lemon grammar.
@@ -180,16 +165,6 @@ chaz_MakeFile_add_lemon_exe(chaz_MakeFile *makefile, const char *dir);
 chaz_MakeRule*
 chaz_MakeFile_add_lemon_grammar(chaz_MakeFile *makefile,
                                 const char *base_name);
-
-/** Override compiler flags for a single object file.
- *
- * @param makefile The makefile.
- * @param obj The object file.
- * @param cflags Compiler flags.
- */
-chaz_MakeRule*
-chaz_MakeFile_override_cflags(chaz_MakeFile *makefile, const char *obj,
-                              chaz_CFlags *cflags);
 
 /** Write the makefile to a file named 'Makefile' in the current directory.
  *
@@ -266,6 +241,49 @@ chaz_MakeRule_add_recursive_rm_command(chaz_MakeRule *rule, const char *dirs);
 void
 chaz_MakeRule_add_make_command(chaz_MakeRule *rule, const char *dir,
                                const char *target);
+
+/** Add a source file for the binary.
+ *
+ * @param dir The source directory or NULL for the current directory.
+ * @param filename The filename.
+ */
+void
+chaz_MakeBinary_add_src_file(chaz_MakeBinary *self, const char *dir,
+                             const char *filename);
+
+/** Add all .c files in a directory as sources for the binary.
+ *
+ * @param path The path to the directory.
+ */
+void
+chaz_MakeBinary_add_src_dir(chaz_MakeBinary *self, const char *path);
+
+/** Add a prerequisite to the make rule of the binary.
+ *
+ * @param prereq The prerequisite.
+ */
+void
+chaz_MakeBinary_add_prereq(chaz_MakeBinary *self, const char *prereq);
+
+/** Return a list of all objects separated by space.
+ */
+char*
+chaz_MakeBinary_obj_string(chaz_MakeBinary *self);
+
+/** Accessor for target.
+ */
+const char*
+chaz_MakeBinary_get_target(chaz_MakeBinary *self);
+
+/** Accessor for compile flags.
+ */
+chaz_CFlags*
+chaz_MakeBinary_get_compile_flags(chaz_MakeBinary *self);
+
+/** Accessor for link flags.
+ */
+chaz_CFlags*
+chaz_MakeBinary_get_link_flags(chaz_MakeBinary *self);
 
 #ifdef __cplusplus
 }

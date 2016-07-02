@@ -37,6 +37,13 @@ chaz_CC_eval_macro(const char *macro);
 static void
 chaz_CC_detect_known_compilers(void);
 
+/** Build a library filename from its components.
+ */
+static char*
+chaz_CC_build_lib_filename(const char *dir, const char *prefix,
+                           const char *basename, const char *version,
+                           const char *ext);
+
 /* Temporary files. */
 #define CHAZ_CC_TRY_SOURCE_PATH  "_charmonizer_try.c"
 #define CHAZ_CC_TRY_BASENAME     "_charmonizer_try"
@@ -75,7 +82,6 @@ void
 chaz_CC_init(const char *compiler_command, const char *compiler_flags) {
     const char *code = "int main() { return 0; }\n";
     int compile_succeeded = 0;
-    int retval            = -1;
 
     if (chaz_Util_verbosity) { printf("Creating compiler object...\n"); }
 
@@ -566,7 +572,8 @@ chaz_CC_format_archiver_command(const char *target, const char *objects) {
         /* TODO: Write `objects` to a temporary file in order to avoid
          * exceeding line length limits. */
         char *out = chaz_Util_join("", "/OUT:", target, NULL);
-        char *command = chaz_Util_join(" ", "lib", "/NOLOGO", out, NULL);
+        char *command = chaz_Util_join(" ", "lib", "/NOLOGO", objects, out,
+                                       NULL);
         free(out);
         return command;
     }
@@ -581,5 +588,87 @@ chaz_CC_format_ranlib_command(const char *target) {
         return NULL;
     }
     return chaz_Util_join(" ", "ranlib", target, NULL);
+}
+
+char*
+chaz_CC_shared_lib_filename(const char *dir, const char *basename,
+                            const char *version) {
+    /* Cygwin uses a "cyg" prefix for shared libraries. */
+    const char *prefix = chaz_CC_msvc_version_num()
+                         ? ""
+                         : chaz_CC_is_cygwin() ? "cyg" : "lib";
+    return chaz_CC_build_lib_filename(dir, prefix, basename, version,
+                                      chaz_CC.shared_lib_ext);
+}
+
+char*
+chaz_CC_import_lib_filename(const char *dir, const char *basename,
+                            const char *version) {
+    const char *prefix = chaz_CC_msvc_version_num() ? "" : "lib";
+    return chaz_CC_build_lib_filename(dir, prefix, basename, version,
+                                      chaz_CC.import_lib_ext);
+}
+
+char*
+chaz_CC_export_filename(const char *dir, const char *basename,
+                        const char *version) {
+    /* Only for MSVC. */
+    return chaz_CC_build_lib_filename(dir, "", basename, version, ".exp");
+}
+
+static char*
+chaz_CC_build_lib_filename(const char *dir, const char *prefix,
+                           const char *basename, const char *version,
+                           const char *ext) {
+    char *suffix;
+    char *retval;
+
+    if (version == NULL) {
+        suffix = chaz_Util_strdup(ext);
+    }
+    else {
+        int binary_format = chaz_CC_binary_format();
+
+        if (binary_format == CHAZ_CC_BINFMT_PE) {
+            suffix = chaz_Util_join("", "-", version, ext, NULL);
+        }
+        else if (binary_format == CHAZ_CC_BINFMT_MACHO) {
+            suffix = chaz_Util_join("", ".", version, ext, NULL);
+        }
+        else if (binary_format == CHAZ_CC_BINFMT_ELF) {
+            suffix = chaz_Util_join("", ext, ".", version, NULL);
+        }
+        else {
+            chaz_Util_die("Unsupported binary format");
+            return NULL;
+        }
+    }
+
+    if (dir == NULL || strcmp(dir, ".") == 0) {
+        retval = chaz_Util_join("", prefix, basename, suffix, NULL);
+    }
+    else {
+        const char *dir_sep = chaz_OS_dir_sep();
+        retval = chaz_Util_join("", dir, dir_sep, prefix, basename, suffix,
+                                NULL);
+    }
+
+    free(suffix);
+    return retval;
+}
+
+char*
+chaz_CC_static_lib_filename(const char *dir, const char *basename) {
+    const char *prefix = chaz_CC_msvc_version_num() ? "" : "lib";
+
+    if (dir == NULL || strcmp(dir, ".") == 0) {
+        return chaz_Util_join("", prefix, basename, chaz_CC.static_lib_ext,
+                              NULL);
+    }
+    else {
+        const char *dir_sep = chaz_OS_dir_sep();
+        return chaz_Util_join("", dir, dir_sep, prefix, basename,
+                              chaz_CC.static_lib_ext, NULL);
+    }
 }
 
