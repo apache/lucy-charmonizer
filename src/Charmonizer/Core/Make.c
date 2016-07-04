@@ -655,6 +655,7 @@ chaz_MakeFile_write_binary_rules(chaz_MakeFile *self, chaz_MakeBinary *binary,
     const char *cflags;
 
     if (chaz_CC_msvc_version_num()) {
+        chaz_CFlags_append(binary->compile_flags, "/nologo");
         chaz_CFlags_append(binary->link_flags, "/nologo");
     }
 
