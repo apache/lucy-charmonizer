@@ -69,12 +69,13 @@ static struct {
     int       intval___clang__;
     int       intval___SUNPRO_C;
     int       is_cygwin;
+    int       is_mingw;
     chaz_CFlags *extra_cflags;
     chaz_CFlags *temp_cflags;
 } chaz_CC = {
     NULL, NULL, NULL,
     "", "", "", "", "", "",
-    0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     NULL, NULL
 };
 
@@ -182,6 +183,9 @@ chaz_CC_init(const char *compiler_command, const char *compiler_flags) {
 
         if (chaz_CC_has_macro("__CYGWIN__")) {
             chaz_CC.is_cygwin = 1;
+        }
+        if (chaz_CC_has_macro("__MINGW32__")) {
+            chaz_CC.is_mingw = 1;
         }
     }
     else {
@@ -554,6 +558,11 @@ chaz_CC_sun_c_version_num(void) {
 int
 chaz_CC_is_cygwin(void) {
     return chaz_CC.is_cygwin;
+}
+
+int
+chaz_CC_is_mingw(void) {
+    return chaz_CC.is_mingw;
 }
 
 const char*
