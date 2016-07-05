@@ -135,7 +135,7 @@ S_chaz_CLI_rebuild_help(chaz_CLI *self) {
 }
 
 static chaz_CLIOption*
-S_find_opt(chaz_CLI *self, const char *name) {
+S_chaz_CLI_find_opt(chaz_CLI *self, const char *name) {
     int i;
     for (i = 0; i < self->num_opts; i++) {
         chaz_CLIOption *opt = &self->opts[i];
@@ -231,7 +231,7 @@ chaz_CLI_register(chaz_CLI *self, const char *name, const char *help,
 
 int
 chaz_CLI_set(chaz_CLI *self, const char *name, const char *value) {
-    chaz_CLIOption *opt = S_find_opt(self, name);
+    chaz_CLIOption *opt = S_chaz_CLI_find_opt(self, name);
     if (opt == NULL) {
         S_chaz_CLI_error(self, "Attempt to set unknown option: '%s'", name);
         return 0;
@@ -259,7 +259,7 @@ chaz_CLI_set(chaz_CLI *self, const char *name, const char *value) {
 
 int
 chaz_CLI_unset(chaz_CLI *self, const char *name) {
-    chaz_CLIOption *opt = S_find_opt(self, name);
+    chaz_CLIOption *opt = S_chaz_CLI_find_opt(self, name);
     if (opt == NULL) {
         S_chaz_CLI_error(self, "Attempt to unset unknown option: '%s'", name);
         return 0;
@@ -272,7 +272,7 @@ chaz_CLI_unset(chaz_CLI *self, const char *name) {
 
 int
 chaz_CLI_defined(chaz_CLI *self, const char *name) {
-    chaz_CLIOption *opt = S_find_opt(self, name);
+    chaz_CLIOption *opt = S_chaz_CLI_find_opt(self, name);
     if (opt == NULL) {
         S_chaz_CLI_error(self, "Inquiry for unknown option: '%s'", name);
         return 0;
@@ -282,7 +282,7 @@ chaz_CLI_defined(chaz_CLI *self, const char *name) {
 
 long
 chaz_CLI_longval(chaz_CLI *self, const char *name) {
-    chaz_CLIOption *opt = S_find_opt(self, name);
+    chaz_CLIOption *opt = S_chaz_CLI_find_opt(self, name);
     if (opt == NULL) {
         S_chaz_CLI_error(self, "Longval request for unknown option: '%s'",
                          name);
@@ -296,7 +296,7 @@ chaz_CLI_longval(chaz_CLI *self, const char *name) {
 
 const char*
 chaz_CLI_strval(chaz_CLI *self, const char *name) {
-    chaz_CLIOption *opt = S_find_opt(self, name);
+    chaz_CLIOption *opt = S_chaz_CLI_find_opt(self, name);
     if (opt == NULL) {
         S_chaz_CLI_error(self, "Strval request for unknown option: '%s'",
                          name);
@@ -357,7 +357,7 @@ chaz_CLI_parse(chaz_CLI *self, int argc, const char *argv[]) {
 
         if (value == NULL && i + 1 < argc) {
             /* Support both '--opt=val' and '--opt val' styles. */
-            chaz_CLIOption *opt = S_find_opt(self, name);
+            chaz_CLIOption *opt = S_chaz_CLI_find_opt(self, name);
             if (opt == NULL) {
                 S_chaz_CLI_error(self, "Attempt to set unknown option: '%s'",
                                  name);

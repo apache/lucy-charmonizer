@@ -90,67 +90,69 @@ static struct {
  *      dmake
  */
 static int
-chaz_Make_detect(const char *make1, ...);
+S_chaz_Make_detect(const char *make1, ...);
 
 static int
-chaz_Make_audition(const char *make);
+S_chaz_Make_audition(const char *make);
 
 static void
-chaz_MakeFile_finish_exe(chaz_MakeFile *self, chaz_MakeBinary *binary);
+S_chaz_MakeFile_finish_exe(chaz_MakeFile *self, chaz_MakeBinary *binary);
 
 static void
-chaz_MakeFile_finish_shared_lib(chaz_MakeFile *self, chaz_MakeBinary *binary);
+S_chaz_MakeFile_finish_shared_lib(chaz_MakeFile *self,
+                                  chaz_MakeBinary *binary);
 
 static void
-chaz_MakeFile_finish_static_lib(chaz_MakeFile *self, chaz_MakeBinary *binary);
+S_chaz_MakeFile_finish_static_lib(chaz_MakeFile *self,
+                                  chaz_MakeBinary *binary);
 
 static chaz_MakeBinary*
-chaz_MakeFile_add_binary(chaz_MakeFile *self, int type, const char *dir,
-                         const char *basename, const char *target);
+S_chaz_MakeFile_add_binary(chaz_MakeFile *self, int type, const char *dir,
+                           const char *basename, const char *target);
 
 static void
-chaz_MakeFile_write_binary_rules(chaz_MakeFile *self, chaz_MakeBinary *binary,
-                                 FILE *out);
+S_chaz_MakeFile_write_binary_rules(chaz_MakeFile *self,
+                                   chaz_MakeBinary *binary, FILE *out);
 
 static void
-chaz_MakeFile_write_object_rules(char **sources, const char *command,
-                                 FILE *out);
+S_chaz_MakeFile_write_object_rules(char **sources, const char *command,
+                                   FILE *out);
 
 static void
-chaz_MakeFile_write_pattern_rules(char **dirs, const char *command,
-                                  FILE *out);
+S_chaz_MakeFile_write_pattern_rules(char **dirs, const char *command,
+                                    FILE *out);
 
 static chaz_MakeRule*
-S_new_rule(const char *target, const char *prereq);
+S_chaz_MakeRule_new(const char *target, const char *prereq);
 
 static void
-S_destroy_rule(chaz_MakeRule *self);
+S_chaz_MakeRule_destroy(chaz_MakeRule *self);
 
 static void
-S_write_rule(chaz_MakeRule *self, FILE *out);
+S_chaz_MakeRule_write(chaz_MakeRule *self, FILE *out);
 
 static void
-chaz_MakeBinary_destroy(chaz_MakeBinary *self);
+S_chaz_MakeBinary_destroy(chaz_MakeBinary *self);
 
 static void
-chaz_MakeBinary_list_files_callback(const char *dir, char *file,
-                                    void *context);
+S_chaz_MakeBinary_list_files_callback(const char *dir, char *file,
+                                      void *context);
 static void
-chaz_MakeBinary_do_add_src_file(chaz_MakeBinary *self, const char *path);
+S_chaz_MakeBinary_do_add_src_file(chaz_MakeBinary *self, const char *path);
 
 /** Return the path to the object file for a source file.
  *
  * @param path The path to the source file.
  */
 static char*
-chaz_MakeBinary_obj_path(const char *src_path);
+S_chaz_MakeBinary_obj_path(const char *src_path);
 
 void
 chaz_Make_init(const char *make_command) {
     chaz_Make.shell_type = chaz_OS_shell_type();
 
     if (make_command) {
-        if (!chaz_Make_detect(make_command, NULL)) {
+        if (!S_chaz_Make_detect(make_command, NULL)) {
             chaz_Util_warn("Make utility '%s' doesn't appear to work",
                            make_command);
         }
@@ -162,12 +164,12 @@ chaz_Make_init(const char *make_command) {
          * and sh.exe. Not sure about dmake.
          */
         if (chaz_Make.shell_type == CHAZ_OS_POSIX) {
-            succeeded = chaz_Make_detect("make", "gmake", "dmake",
-                                         "mingw32-make", NULL);
+            succeeded = S_chaz_Make_detect("make", "gmake", "dmake",
+                                           "mingw32-make", NULL);
         }
         else if (chaz_Make.shell_type == CHAZ_OS_CMD_EXE) {
-            succeeded = chaz_Make_detect("nmake", "dmake", "mingw32-make",
-                                         NULL);
+            succeeded = S_chaz_Make_detect("nmake", "dmake", "mingw32-make",
+                                           NULL);
         }
 
         if (!succeeded) {
@@ -195,7 +197,7 @@ chaz_Make_shell_type(void) {
 }
 
 static int
-chaz_Make_detect(const char *make1, ...) {
+S_chaz_Make_detect(const char *make1, ...) {
     va_list args;
     const char *candidate;
     int found = 0;
@@ -203,10 +205,10 @@ chaz_Make_detect(const char *make1, ...) {
     chaz_Util_write_file("_charm_Makefile", makefile_content);
 
     /* Audition candidates. */
-    found = chaz_Make_audition(make1);
+    found = S_chaz_Make_audition(make1);
     va_start(args, make1);
     while (!found && (NULL != (candidate = va_arg(args, const char*)))) {
-        found = chaz_Make_audition(candidate);
+        found = S_chaz_Make_audition(candidate);
     }
     va_end(args);
 
@@ -216,7 +218,7 @@ chaz_Make_detect(const char *make1, ...) {
 }
 
 static int
-chaz_Make_audition(const char *make) {
+S_chaz_Make_audition(const char *make) {
     int succeeded = 0;
     char *command = chaz_Util_join(" ", make, "-f", "_charm_Makefile", NULL);
 
@@ -251,8 +253,8 @@ chaz_MakeFile_new() {
     self->rules    = (chaz_MakeRule**)calloc(1, sizeof(chaz_MakeRule*));
     self->binaries = (chaz_MakeBinary**)calloc(1, sizeof(chaz_MakeBinary*));
 
-    self->clean     = S_new_rule("clean", NULL);
-    self->distclean = S_new_rule("distclean", "clean");
+    self->clean     = S_chaz_MakeRule_new("clean", NULL);
+    self->distclean = S_chaz_MakeRule_new("distclean", "clean");
 
     generated = chaz_Util_join("", "charmonizer", exe_ext, " charmonizer",
                                obj_ext, " charmony.h Makefile", NULL);
@@ -275,17 +277,17 @@ chaz_MakeFile_destroy(chaz_MakeFile *self) {
     free(self->vars);
 
     for (i = 0; self->rules[i]; i++) {
-        S_destroy_rule(self->rules[i]);
+        S_chaz_MakeRule_destroy(self->rules[i]);
     }
     free(self->rules);
 
     for (i = 0; self->binaries[i]; i++) {
-        chaz_MakeBinary_destroy(self->binaries[i]);
+        S_chaz_MakeBinary_destroy(self->binaries[i]);
     }
     free(self->binaries);
 
-    S_destroy_rule(self->clean);
-    S_destroy_rule(self->distclean);
+    S_chaz_MakeRule_destroy(self->clean);
+    S_chaz_MakeRule_destroy(self->distclean);
 
     free(self);
 }
@@ -316,7 +318,7 @@ chaz_MakeFile_add_var(chaz_MakeFile *self, const char *name,
 chaz_MakeRule*
 chaz_MakeFile_add_rule(chaz_MakeFile *self, const char *target,
                        const char *prereq) {
-    chaz_MakeRule  *rule      = S_new_rule(target, prereq);
+    chaz_MakeRule  *rule      = S_chaz_MakeRule_new(target, prereq);
     chaz_MakeRule **rules     = self->rules;
     size_t          num_rules = self->num_rules + 1;
 
@@ -355,15 +357,15 @@ chaz_MakeFile_add_exe(chaz_MakeFile *self, const char *dir,
         target = chaz_Util_join("", dir, dir_sep, basename, exe_ext, NULL);
     }
 
-    binary = chaz_MakeFile_add_binary(self, CHAZ_MAKEBINARY_EXE, dir, basename,
-                                      target);
+    binary = S_chaz_MakeFile_add_binary(self, CHAZ_MAKEBINARY_EXE, dir,
+                                        basename, target);
 
     free(target);
     return binary;
 }
 
 void
-chaz_MakeFile_finish_exe(chaz_MakeFile *self, chaz_MakeBinary *binary) {
+S_chaz_MakeFile_finish_exe(chaz_MakeFile *self, chaz_MakeBinary *binary) {
     const char *link = chaz_CC_link_command();
     const char *link_flags_string;
     char *command;
@@ -400,8 +402,8 @@ chaz_MakeFile_add_shared_lib(chaz_MakeFile *self, const char *dir,
         target = chaz_CC_shared_lib_filename(dir, basename, version);
     }
 
-    binary = chaz_MakeFile_add_binary(self, CHAZ_MAKEBINARY_SHARED_LIB, dir,
-                                      basename, target);
+    binary = S_chaz_MakeFile_add_binary(self, CHAZ_MAKEBINARY_SHARED_LIB, dir,
+                                        basename, target);
     binary->version       = chaz_Util_strdup(version);
     binary->major_version = chaz_Util_strdup(major_version);
 
@@ -414,7 +416,8 @@ chaz_MakeFile_add_shared_lib(chaz_MakeFile *self, const char *dir,
 }
 
 void
-chaz_MakeFile_finish_shared_lib(chaz_MakeFile *self, chaz_MakeBinary *binary) {
+S_chaz_MakeFile_finish_shared_lib(chaz_MakeFile *self,
+                                  chaz_MakeBinary *binary) {
     const char *link = chaz_CC_link_command();
     const char *link_flags_string;
     int binfmt = chaz_CC_binary_format();
@@ -494,15 +497,16 @@ chaz_MakeFile_add_static_lib(chaz_MakeFile *self, const char *dir,
                              const char *basename) {
     char *target = chaz_CC_static_lib_filename(dir, basename);
     chaz_MakeBinary *binary
-        = chaz_MakeFile_add_binary(self, CHAZ_MAKEBINARY_STATIC_LIB, dir,
-                                   basename, target);
+        = S_chaz_MakeFile_add_binary(self, CHAZ_MAKEBINARY_STATIC_LIB, dir,
+                                     basename, target);
 
     free(target);
     return binary;
 }
 
 static void
-chaz_MakeFile_finish_static_lib(chaz_MakeFile *self, chaz_MakeBinary *binary) {
+S_chaz_MakeFile_finish_static_lib(chaz_MakeFile *self,
+                                  chaz_MakeBinary *binary) {
     char *command;
 
     (void)self;
@@ -519,8 +523,8 @@ chaz_MakeFile_finish_static_lib(chaz_MakeFile *self, chaz_MakeBinary *binary) {
 }
 
 static chaz_MakeBinary*
-chaz_MakeFile_add_binary(chaz_MakeFile *self, int type, const char *dir,
-                         const char *basename, const char *target) {
+S_chaz_MakeFile_add_binary(chaz_MakeFile *self, int type, const char *dir,
+                           const char *basename, const char *target) {
     chaz_MakeBinary *binary
         = (chaz_MakeBinary*)calloc(1, sizeof(chaz_MakeBinary));
     const char *suffix;
@@ -557,7 +561,7 @@ chaz_MakeFile_add_binary(chaz_MakeFile *self, int type, const char *dir,
     binary->basename       = chaz_Util_strdup(basename);
     binary->obj_var        = chaz_MakeFile_add_var(self, obj_var_name, NULL);
     binary->dollar_var     = dollar_var;
-    binary->rule           = S_new_rule(target, dollar_var);
+    binary->rule           = S_chaz_MakeRule_new(target, dollar_var);
     binary->sources        = (char**)calloc(1, sizeof(char*));
     binary->single_sources = (char**)calloc(1, sizeof(char*));
     binary->dirs           = (char**)calloc(1, sizeof(char*));
@@ -633,15 +637,15 @@ chaz_MakeFile_write(chaz_MakeFile *self) {
     fprintf(out, "\n");
 
     for (i = 0; self->rules[i]; i++) {
-        S_write_rule(self->rules[i], out);
+        S_chaz_MakeRule_write(self->rules[i], out);
     }
 
     for (i = 0; self->binaries[i]; i++) {
-        chaz_MakeFile_write_binary_rules(self, self->binaries[i], out);
+        S_chaz_MakeFile_write_binary_rules(self, self->binaries[i], out);
     }
 
-    S_write_rule(self->clean, out);
-    S_write_rule(self->distclean, out);
+    S_chaz_MakeRule_write(self->clean, out);
+    S_chaz_MakeRule_write(self->distclean, out);
 
     /* Suffix rule for .c files. */
     if (chaz_CC_msvc_version_num()) {
@@ -657,8 +661,8 @@ chaz_MakeFile_write(chaz_MakeFile *self) {
 }
 
 static void
-chaz_MakeFile_write_binary_rules(chaz_MakeFile *self, chaz_MakeBinary *binary,
-                                 FILE *out) {
+S_chaz_MakeFile_write_binary_rules(chaz_MakeFile *self,
+                                   chaz_MakeBinary *binary, FILE *out) {
     const char *cflags;
 
     if (chaz_CC_msvc_version_num()) {
@@ -668,13 +672,13 @@ chaz_MakeFile_write_binary_rules(chaz_MakeFile *self, chaz_MakeBinary *binary,
 
     switch (binary->type) {
         case CHAZ_MAKEBINARY_EXE:
-            chaz_MakeFile_finish_exe(self, binary);
+            S_chaz_MakeFile_finish_exe(self, binary);
             break;
         case CHAZ_MAKEBINARY_STATIC_LIB:
-            chaz_MakeFile_finish_static_lib(self, binary);
+            S_chaz_MakeFile_finish_static_lib(self, binary);
             break;
         case CHAZ_MAKEBINARY_SHARED_LIB:
-            chaz_MakeFile_finish_shared_lib(self, binary);
+            S_chaz_MakeFile_finish_shared_lib(self, binary);
             break;
         default:
             chaz_Util_die("Invalid binary type: %d", binary->type);
@@ -684,7 +688,7 @@ chaz_MakeFile_write_binary_rules(chaz_MakeFile *self, chaz_MakeBinary *binary,
     chaz_MakeRule_add_rm_command(self->clean, binary->rule->targets);
     chaz_MakeRule_add_rm_command(self->clean, binary->dollar_var);
 
-    S_write_rule(binary->rule, out);
+    S_chaz_MakeRule_write(binary->rule, out);
 
     cflags = chaz_CFlags_get_string(binary->compile_flags);
 
@@ -696,21 +700,21 @@ chaz_MakeFile_write_binary_rules(chaz_MakeFile *self, chaz_MakeBinary *binary,
              * which has problems with pattern rules and backslash directory
              * separators.
              */
-            chaz_MakeFile_write_object_rules(binary->sources, cflags, out);
+            S_chaz_MakeFile_write_object_rules(binary->sources, cflags, out);
         }
         else {
             /* Write a pattern rule for each directory. */
-            chaz_MakeFile_write_pattern_rules(binary->dirs, cflags, out);
+            S_chaz_MakeFile_write_pattern_rules(binary->dirs, cflags, out);
             /* Write a rule for each object added with add_src_file. */
-            chaz_MakeFile_write_object_rules(binary->single_sources, cflags,
-                                             out);
+            S_chaz_MakeFile_write_object_rules(binary->single_sources, cflags,
+                                               out);
         }
     }
 }
 
 static void
-chaz_MakeFile_write_object_rules(char **sources, const char *cflags,
-                                 FILE *out) {
+S_chaz_MakeFile_write_object_rules(char **sources, const char *cflags,
+                                   FILE *out) {
     chaz_CFlags *output_cflags = chaz_CC_new_cflags();
     const char *output_cflags_string;
     size_t i;
@@ -720,20 +724,20 @@ chaz_MakeFile_write_object_rules(char **sources, const char *cflags,
 
     for (i = 0; sources[i]; i++) {
         const char *source = sources[i];
-        char *obj_path = chaz_MakeBinary_obj_path(source);
+        char *obj_path = S_chaz_MakeBinary_obj_path(source);
         chaz_MakeRule *rule;
         char *command;
 
         if (obj_path == NULL) { continue; }
 
-        rule = S_new_rule(obj_path, source);
+        rule = S_chaz_MakeRule_new(obj_path, source);
         command = chaz_Util_join(" ", "$(CC) $(CFLAGS)", cflags, source,
                                  output_cflags_string, NULL);
         chaz_MakeRule_add_command(rule, command);
-        S_write_rule(rule, out);
+        S_chaz_MakeRule_write(rule, out);
 
         free(command);
-        S_destroy_rule(rule);
+        S_chaz_MakeRule_destroy(rule);
         free(obj_path);
     }
 
@@ -741,7 +745,8 @@ chaz_MakeFile_write_object_rules(char **sources, const char *cflags,
 }
 
 static void
-chaz_MakeFile_write_pattern_rules(char **dirs, const char *cflags, FILE *out) {
+S_chaz_MakeFile_write_pattern_rules(char **dirs, const char *cflags,
+                                    FILE *out) {
     const char *obj_ext = chaz_CC_obj_ext();
     const char *dir_sep = chaz_OS_dir_sep();
     chaz_CFlags *output_cflags = chaz_CC_new_cflags();
@@ -759,12 +764,12 @@ chaz_MakeFile_write_pattern_rules(char **dirs, const char *cflags, FILE *out) {
         char *target = chaz_Util_join("", dir, dir_sep, "%", obj_ext,
                                       NULL);
         char *prereq = chaz_Util_join("", dir, dir_sep, "%.c", NULL);
-        chaz_MakeRule *rule = S_new_rule(target, prereq);
+        chaz_MakeRule *rule = S_chaz_MakeRule_new(target, prereq);
 
         chaz_MakeRule_add_command(rule, command);
-        S_write_rule(rule, out);
+        S_chaz_MakeRule_write(rule, out);
 
-        S_destroy_rule(rule);
+        S_chaz_MakeRule_destroy(rule);
         free(prereq);
         free(target);
     }
@@ -799,7 +804,7 @@ chaz_MakeVar_append(chaz_MakeVar *self, const char *element) {
 }
 
 static chaz_MakeRule*
-S_new_rule(const char *target, const char *prereq) {
+S_chaz_MakeRule_new(const char *target, const char *prereq) {
     chaz_MakeRule *rule = (chaz_MakeRule*)malloc(sizeof(chaz_MakeRule));
 
     rule->targets  = NULL;
@@ -813,7 +818,7 @@ S_new_rule(const char *target, const char *prereq) {
 }
 
 static void
-S_destroy_rule(chaz_MakeRule *self) {
+S_chaz_MakeRule_destroy(chaz_MakeRule *self) {
     if (self->targets)  { free(self->targets); }
     if (self->prereqs)  { free(self->prereqs); }
     if (self->commands) { free(self->commands); }
@@ -821,7 +826,7 @@ S_destroy_rule(chaz_MakeRule *self) {
 }
 
 static void
-S_write_rule(chaz_MakeRule *self, FILE *out) {
+S_chaz_MakeRule_write(chaz_MakeRule *self, FILE *out) {
     fprintf(out, "%s :", self->targets);
     if (self->prereqs) {
         fprintf(out, " %s", self->prereqs);
@@ -1004,7 +1009,7 @@ chaz_MakeRule_add_make_command(chaz_MakeRule *self, const char *dir,
 }
 
 static void
-chaz_MakeBinary_destroy(chaz_MakeBinary *self) {
+S_chaz_MakeBinary_destroy(chaz_MakeBinary *self) {
     size_t i;
 
     free(self->target_dir);
@@ -1012,7 +1017,7 @@ chaz_MakeBinary_destroy(chaz_MakeBinary *self) {
     free(self->version);
     free(self->major_version);
     free(self->dollar_var);
-    S_destroy_rule(self->rule);
+    S_chaz_MakeRule_destroy(self->rule);
 
     for (i = 0; i < self->num_sources; i++) {
         free(self->sources[i]);
@@ -1055,7 +1060,7 @@ chaz_MakeBinary_add_src_file(chaz_MakeBinary *self, const char *dir,
     self->single_sources     = sources;
     self->num_single_sources = num_sources + 1;
 
-    chaz_MakeBinary_do_add_src_file(self, path);
+    S_chaz_MakeBinary_do_add_src_file(self, path);
 }
 
 void
@@ -1068,22 +1073,22 @@ chaz_MakeBinary_add_src_dir(chaz_MakeBinary *self, const char *path) {
     self->dirs     = dirs;
     self->num_dirs = num_dirs + 1;
 
-    chaz_Make_list_files(path, "c", chaz_MakeBinary_list_files_callback,
+    chaz_Make_list_files(path, "c", S_chaz_MakeBinary_list_files_callback,
                          self);
 }
 
 static void
-chaz_MakeBinary_list_files_callback(const char *dir, char *file,
-                                    void *context) {
+S_chaz_MakeBinary_list_files_callback(const char *dir, char *file,
+                                      void *context) {
     const char *dir_sep = chaz_OS_dir_sep();
     char *path = chaz_Util_join(dir_sep, dir, file, NULL);
 
-    chaz_MakeBinary_do_add_src_file((chaz_MakeBinary*)context, path);
+    S_chaz_MakeBinary_do_add_src_file((chaz_MakeBinary*)context, path);
     free(path);
 }
 
 static void
-chaz_MakeBinary_do_add_src_file(chaz_MakeBinary *self, const char *path) {
+S_chaz_MakeBinary_do_add_src_file(chaz_MakeBinary *self, const char *path) {
     size_t num_sources = self->num_sources;
     size_t alloc_size  = (num_sources + 2) * sizeof(char*);
     char **sources = (char**)realloc(self->sources, alloc_size);
@@ -1094,7 +1099,7 @@ chaz_MakeBinary_do_add_src_file(chaz_MakeBinary *self, const char *path) {
     self->sources     = sources;
     self->num_sources = num_sources + 1;
 
-    obj_path = chaz_MakeBinary_obj_path(path);
+    obj_path = S_chaz_MakeBinary_obj_path(path);
     if (obj_path == NULL) {
         chaz_Util_warn("Invalid source filename: %s", path);
     }
@@ -1105,7 +1110,7 @@ chaz_MakeBinary_do_add_src_file(chaz_MakeBinary *self, const char *path) {
 }
 
 static char*
-chaz_MakeBinary_obj_path(const char *src_path) {
+S_chaz_MakeBinary_obj_path(const char *src_path) {
     const char *dir_sep = chaz_OS_dir_sep();
     const char *obj_ext = chaz_CC_obj_ext();
     size_t obj_ext_len = strlen(obj_ext);
@@ -1139,7 +1144,7 @@ chaz_MakeBinary_obj_string(chaz_MakeBinary *self) {
 
     for (i = 0; i < self->num_sources; i++) {
         const char *sep = retval[0] == '\0' ? "" : " ";
-        char *obj_path = chaz_MakeBinary_obj_path(self->sources[i]);
+        char *obj_path = S_chaz_MakeBinary_obj_path(self->sources[i]);
         char *tmp;
 
         if (obj_path == NULL) { continue; }
