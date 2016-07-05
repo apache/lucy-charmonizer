@@ -42,6 +42,7 @@ struct chaz_CLI {
 static void
 S_chaz_CLI_error(chaz_CLI *self, const char *pattern, ...) {
     va_list ap;
+    (void)self;
     if (chaz_Util_verbosity > 0) {
         va_start(ap, pattern);
         vfprintf(stderr, pattern, ap);

@@ -48,7 +48,7 @@ static struct {
     chaz_ConfElem *defs;
     size_t         def_cap;
     size_t         def_count;
-} chaz_ConfWriterC = { NULL, NULL, 0, 0 };
+} chaz_ConfWriterC = { NULL, NULL, NULL, 0, 0 };
 static chaz_ConfWriter CWC_conf_writer;
 
 /* Open the charmony.h file handle.  Print supplied text to it, if non-null.
