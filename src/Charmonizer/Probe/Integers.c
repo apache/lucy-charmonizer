@@ -587,6 +587,12 @@ chaz_Integers_run(void) {
     chaz_ConfWriter_start_module("IntegerFormatStrings");
 
     if (has_inttypes) {
+        if (chaz_CC_is_mingw()) {
+            /* Suppress warnings about undefined inline function `llabs`
+             * under MinGW.
+             */
+            chaz_ConfWriter_add_sys_include("stdlib.h");
+        }
         chaz_ConfWriter_add_sys_include("inttypes.h");
     }
 
