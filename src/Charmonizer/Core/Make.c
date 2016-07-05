@@ -124,10 +124,10 @@ static chaz_MakeRule*
 S_new_rule(const char *target, const char *prereq);
 
 static void
-S_destroy_rule(chaz_MakeRule *rule);
+S_destroy_rule(chaz_MakeRule *self);
 
 static void
-S_write_rule(chaz_MakeRule *rule, FILE *out);
+S_write_rule(chaz_MakeRule *self, FILE *out);
 
 static void
 chaz_MakeBinary_destroy(chaz_MakeBinary *self);
@@ -291,11 +291,11 @@ chaz_MakeFile_destroy(chaz_MakeFile *self) {
 }
 
 chaz_MakeVar*
-chaz_MakeFile_add_var(chaz_MakeFile *makefile, const char *name,
+chaz_MakeFile_add_var(chaz_MakeFile *self, const char *name,
                       const char *value) {
     chaz_MakeVar  *var      = (chaz_MakeVar*)malloc(sizeof(chaz_MakeVar));
-    chaz_MakeVar **vars     = makefile->vars;
-    size_t         num_vars = makefile->num_vars + 1;
+    chaz_MakeVar **vars     = self->vars;
+    size_t         num_vars = self->num_vars + 1;
 
     var->name         = chaz_Util_strdup(name);
     var->value        = chaz_Util_strdup("");
@@ -307,37 +307,37 @@ chaz_MakeFile_add_var(chaz_MakeFile *makefile, const char *name,
                                    (num_vars + 1) * sizeof(chaz_MakeVar*));
     vars[num_vars-1] = var;
     vars[num_vars]   = NULL;
-    makefile->vars = vars;
-    makefile->num_vars = num_vars;
+    self->vars = vars;
+    self->num_vars = num_vars;
 
     return var;
 }
 
 chaz_MakeRule*
-chaz_MakeFile_add_rule(chaz_MakeFile *makefile, const char *target,
+chaz_MakeFile_add_rule(chaz_MakeFile *self, const char *target,
                        const char *prereq) {
     chaz_MakeRule  *rule      = S_new_rule(target, prereq);
-    chaz_MakeRule **rules     = makefile->rules;
-    size_t          num_rules = makefile->num_rules + 1;
+    chaz_MakeRule **rules     = self->rules;
+    size_t          num_rules = self->num_rules + 1;
 
     rules = (chaz_MakeRule**)realloc(rules,
                                      (num_rules + 1) * sizeof(chaz_MakeRule*));
     rules[num_rules-1] = rule;
     rules[num_rules]   = NULL;
-    makefile->rules = rules;
-    makefile->num_rules = num_rules;
+    self->rules = rules;
+    self->num_rules = num_rules;
 
     return rule;
 }
 
 chaz_MakeRule*
-chaz_MakeFile_clean_rule(chaz_MakeFile *makefile) {
-    return makefile->clean;
+chaz_MakeFile_clean_rule(chaz_MakeFile *self) {
+    return self->clean;
 }
 
 chaz_MakeRule*
-chaz_MakeFile_distclean_rule(chaz_MakeFile *makefile) {
-    return makefile->distclean;
+chaz_MakeFile_distclean_rule(chaz_MakeFile *self) {
+    return self->distclean;
 }
 
 chaz_MakeBinary*
@@ -579,8 +579,8 @@ chaz_MakeFile_add_binary(chaz_MakeFile *self, int type, const char *dir,
 }
 
 chaz_MakeBinary*
-chaz_MakeFile_add_lemon_exe(chaz_MakeFile *makefile, const char *dir) {
-    chaz_MakeBinary *exe = chaz_MakeFile_add_exe(makefile, dir, "lemon");
+chaz_MakeFile_add_lemon_exe(chaz_MakeFile *self, const char *dir) {
+    chaz_MakeBinary *exe = chaz_MakeFile_add_exe(self, dir, "lemon");
     chaz_MakeBinary_add_src_file(exe, dir, "lemon.c");
 
     if (chaz_CC_gcc_version_num()) {
@@ -593,15 +593,15 @@ chaz_MakeFile_add_lemon_exe(chaz_MakeFile *makefile, const char *dir) {
 }
 
 chaz_MakeRule*
-chaz_MakeFile_add_lemon_grammar(chaz_MakeFile *makefile,
+chaz_MakeFile_add_lemon_grammar(chaz_MakeFile *self,
                                 const char *base_name) {
     char *c_file  = chaz_Util_join(".", base_name, "c", NULL);
     char *h_file  = chaz_Util_join(".", base_name, "h", NULL);
     char *y_file  = chaz_Util_join(".", base_name, "y", NULL);
     char *command = chaz_Util_join(" ", "$(LEMON_EXE) -q", y_file, NULL);
 
-    chaz_MakeRule *rule = chaz_MakeFile_add_rule(makefile, c_file, y_file);
-    chaz_MakeRule *clean_rule = chaz_MakeFile_clean_rule(makefile);
+    chaz_MakeRule *rule = chaz_MakeFile_add_rule(self, c_file, y_file);
+    chaz_MakeRule *clean_rule = chaz_MakeFile_clean_rule(self);
 
     chaz_MakeRule_add_prereq(rule, "$(LEMON_EXE)");
     chaz_MakeRule_add_command(rule, command);
@@ -617,7 +617,7 @@ chaz_MakeFile_add_lemon_grammar(chaz_MakeFile *makefile,
 }
 
 void
-chaz_MakeFile_write(chaz_MakeFile *makefile) {
+chaz_MakeFile_write(chaz_MakeFile *self) {
     FILE   *out;
     size_t  i;
 
@@ -626,22 +626,22 @@ chaz_MakeFile_write(chaz_MakeFile *makefile) {
         chaz_Util_die("Can't open Makefile\n");
     }
 
-    for (i = 0; makefile->vars[i]; i++) {
-        chaz_MakeVar *var = makefile->vars[i];
+    for (i = 0; self->vars[i]; i++) {
+        chaz_MakeVar *var = self->vars[i];
         fprintf(out, "%s = %s\n", var->name, var->value);
     }
     fprintf(out, "\n");
 
-    for (i = 0; makefile->rules[i]; i++) {
-        S_write_rule(makefile->rules[i], out);
+    for (i = 0; self->rules[i]; i++) {
+        S_write_rule(self->rules[i], out);
     }
 
-    for (i = 0; makefile->binaries[i]; i++) {
-        chaz_MakeFile_write_binary_rules(makefile, makefile->binaries[i], out);
+    for (i = 0; self->binaries[i]; i++) {
+        chaz_MakeFile_write_binary_rules(self, self->binaries[i], out);
     }
 
-    S_write_rule(makefile->clean, out);
-    S_write_rule(makefile->distclean, out);
+    S_write_rule(self->clean, out);
+    S_write_rule(self->distclean, out);
 
     /* Suffix rule for .c files. */
     if (chaz_CC_msvc_version_num()) {
@@ -774,28 +774,28 @@ chaz_MakeFile_write_pattern_rules(char **dirs, const char *cflags, FILE *out) {
 }
 
 void
-chaz_MakeVar_append(chaz_MakeVar *var, const char *element) {
+chaz_MakeVar_append(chaz_MakeVar *self, const char *element) {
     char *value;
 
     if (element[0] == '\0') { return; }
 
-    if (var->num_elements == 0) {
+    if (self->num_elements == 0) {
         value = chaz_Util_strdup(element);
     }
     else {
-        value = (char*)malloc(strlen(var->value) + strlen(element) + 20);
+        value = (char*)malloc(strlen(self->value) + strlen(element) + 20);
 
-        if (var->num_elements == 1) {
-            sprintf(value, "\\\n    %s \\\n    %s", var->value, element);
+        if (self->num_elements == 1) {
+            sprintf(value, "\\\n    %s \\\n    %s", self->value, element);
         }
         else {
-            sprintf(value, "%s \\\n    %s", var->value, element);
+            sprintf(value, "%s \\\n    %s", self->value, element);
         }
     }
 
-    free(var->value);
-    var->value = value;
-    var->num_elements++;
+    free(self->value);
+    self->value = value;
+    self->num_elements++;
 }
 
 static chaz_MakeRule*
@@ -813,75 +813,75 @@ S_new_rule(const char *target, const char *prereq) {
 }
 
 static void
-S_destroy_rule(chaz_MakeRule *rule) {
-    if (rule->targets)  { free(rule->targets); }
-    if (rule->prereqs)  { free(rule->prereqs); }
-    if (rule->commands) { free(rule->commands); }
-    free(rule);
+S_destroy_rule(chaz_MakeRule *self) {
+    if (self->targets)  { free(self->targets); }
+    if (self->prereqs)  { free(self->prereqs); }
+    if (self->commands) { free(self->commands); }
+    free(self);
 }
 
 static void
-S_write_rule(chaz_MakeRule *rule, FILE *out) {
-    fprintf(out, "%s :", rule->targets);
-    if (rule->prereqs) {
-        fprintf(out, " %s", rule->prereqs);
+S_write_rule(chaz_MakeRule *self, FILE *out) {
+    fprintf(out, "%s :", self->targets);
+    if (self->prereqs) {
+        fprintf(out, " %s", self->prereqs);
     }
     fprintf(out, "\n");
-    if (rule->commands) {
-        fprintf(out, "%s", rule->commands);
+    if (self->commands) {
+        fprintf(out, "%s", self->commands);
     }
     fprintf(out, "\n");
 }
 
 void
-chaz_MakeRule_add_target(chaz_MakeRule *rule, const char *target) {
+chaz_MakeRule_add_target(chaz_MakeRule *self, const char *target) {
     char *targets;
 
-    if (!rule->targets) {
+    if (!self->targets) {
         targets = chaz_Util_strdup(target);
     }
     else {
-        targets = chaz_Util_join(" ", rule->targets, target, NULL);
-        free(rule->targets);
+        targets = chaz_Util_join(" ", self->targets, target, NULL);
+        free(self->targets);
     }
 
-    rule->targets = targets;
+    self->targets = targets;
 }
 
 void
-chaz_MakeRule_add_prereq(chaz_MakeRule *rule, const char *prereq) {
+chaz_MakeRule_add_prereq(chaz_MakeRule *self, const char *prereq) {
     char *prereqs;
 
-    if (!rule->prereqs) {
+    if (!self->prereqs) {
         prereqs = chaz_Util_strdup(prereq);
     }
     else {
-        prereqs = chaz_Util_join(" ", rule->prereqs, prereq, NULL);
-        free(rule->prereqs);
+        prereqs = chaz_Util_join(" ", self->prereqs, prereq, NULL);
+        free(self->prereqs);
     }
 
-    rule->prereqs = prereqs;
+    self->prereqs = prereqs;
 }
 
 void
-chaz_MakeRule_add_command(chaz_MakeRule *rule, const char *command) {
+chaz_MakeRule_add_command(chaz_MakeRule *self, const char *command) {
     char *commands;
 
-    if (!rule->commands) {
+    if (!self->commands) {
         commands = (char*)malloc(strlen(command) + 20);
         sprintf(commands, "\t%s\n", command);
     }
     else {
-        commands = (char*)malloc(strlen(rule->commands) + strlen(command) + 20);
-        sprintf(commands, "%s\t%s\n", rule->commands, command);
-        free(rule->commands);
+        commands = (char*)malloc(strlen(self->commands) + strlen(command) + 20);
+        sprintf(commands, "%s\t%s\n", self->commands, command);
+        free(self->commands);
     }
 
-    rule->commands = commands;
+    self->commands = commands;
 }
 
 void
-chaz_MakeRule_add_command_with_libpath(chaz_MakeRule *rule,
+chaz_MakeRule_add_command_with_libpath(chaz_MakeRule *self,
                                        const char *command, ...) {
     va_list args;
     char *path        = NULL;
@@ -928,12 +928,12 @@ chaz_MakeRule_add_command_with_libpath(chaz_MakeRule *rule,
         lib_command = chaz_Util_strdup(command);
     }
 
-    chaz_MakeRule_add_command(rule, lib_command);
+    chaz_MakeRule_add_command(self, lib_command);
     free(lib_command);
 }
 
 void
-chaz_MakeRule_add_rm_command(chaz_MakeRule *rule, const char *files) {
+chaz_MakeRule_add_rm_command(chaz_MakeRule *self, const char *files) {
     char *command;
 
     if (chaz_Make.shell_type == CHAZ_OS_POSIX) {
@@ -947,12 +947,12 @@ chaz_MakeRule_add_rm_command(chaz_MakeRule *rule, const char *files) {
         chaz_Util_die("Unsupported shell type: %d", chaz_Make.shell_type);
     }
 
-    chaz_MakeRule_add_command(rule, command);
+    chaz_MakeRule_add_command(self, command);
     free(command);
 }
 
 void
-chaz_MakeRule_add_recursive_rm_command(chaz_MakeRule *rule, const char *dirs) {
+chaz_MakeRule_add_recursive_rm_command(chaz_MakeRule *self, const char *dirs) {
     char *command;
 
     if (chaz_Make.shell_type == CHAZ_OS_POSIX) {
@@ -966,12 +966,12 @@ chaz_MakeRule_add_recursive_rm_command(chaz_MakeRule *rule, const char *dirs) {
         chaz_Util_die("Unsupported shell type: %d", chaz_Make.shell_type);
     }
 
-    chaz_MakeRule_add_command(rule, command);
+    chaz_MakeRule_add_command(self, command);
     free(command);
 }
 
 void
-chaz_MakeRule_add_make_command(chaz_MakeRule *rule, const char *dir,
+chaz_MakeRule_add_make_command(chaz_MakeRule *self, const char *dir,
                                const char *target) {
     char *command;
 
@@ -983,7 +983,7 @@ chaz_MakeRule_add_make_command(chaz_MakeRule *rule, const char *dir,
             command = chaz_Util_join("", "(cd ", dir, " && $(MAKE) ", target,
                                      ")", NULL);
         }
-        chaz_MakeRule_add_command(rule, command);
+        chaz_MakeRule_add_command(self, command);
         free(command);
     }
     else if (chaz_Make.shell_type == CHAZ_OS_CMD_EXE) {
@@ -995,7 +995,7 @@ chaz_MakeRule_add_make_command(chaz_MakeRule *rule, const char *dir,
             command = chaz_Util_join(" ", "pushd", dir, "&& $(MAKE)", target,
                                      "&& popd", NULL);
         }
-        chaz_MakeRule_add_command(rule, command);
+        chaz_MakeRule_add_command(self, command);
         free(command);
     }
     else {
