@@ -349,6 +349,27 @@ chaz_CFlags_add_external_lib(chaz_CFlags *flags, const char *library) {
 }
 
 void
+chaz_CFlags_add_rpath(chaz_CFlags *flags, const char *path) {
+    char *string;
+
+    if (chaz_CC_binary_format() != CHAZ_CC_BINFMT_ELF) { return; }
+
+    if (flags->style == CHAZ_CFLAGS_STYLE_GNU) {
+        string = chaz_Util_join("", "-Wl,-rpath,", path, NULL);
+    }
+    else if (flags->style == CHAZ_CFLAGS_STYLE_SUN_C) {
+        string = chaz_Util_join(" ", "-R", path, NULL);
+    }
+    else {
+        chaz_Util_die("Don't know how to set rpath with '%s'",
+                      chaz_CC_get_cc());
+    }
+
+    chaz_CFlags_append(flags, string);
+    free(string);
+}
+
+void
 chaz_CFlags_enable_code_coverage(chaz_CFlags *flags) {
     if (flags->style == CHAZ_CFLAGS_STYLE_GNU) {
         chaz_CFlags_append(flags, "--coverage");

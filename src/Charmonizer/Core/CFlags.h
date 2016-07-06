@@ -93,6 +93,9 @@ void
 chaz_CFlags_add_external_lib(chaz_CFlags *flags, const char *library);
 
 void
+chaz_CFlags_add_rpath(chaz_CFlags *flags, const char *path);
+
+void
 chaz_CFlags_enable_code_coverage(chaz_CFlags *flags);
 
 #ifdef __cplusplus
