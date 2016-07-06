@@ -630,6 +630,11 @@ chaz_MakeFile_write(chaz_MakeFile *self) {
         chaz_Util_die("Can't open Makefile\n");
     }
 
+    if (chaz_Make.shell_type == CHAZ_OS_CMD_EXE) {
+        /* Make sure that mingw32-make uses the cmd.exe shell. */
+        fprintf(out, "SHELL = cmd\n");
+    }
+
     for (i = 0; self->vars[i]; i++) {
         chaz_MakeVar *var = self->vars[i];
         fprintf(out, "%s = %s\n", var->name, var->value);
