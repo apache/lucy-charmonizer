@@ -191,15 +191,6 @@ chaz_MakeRule_add_prereq(chaz_MakeRule *self, const char *prereq);
 void
 chaz_MakeRule_add_command(chaz_MakeRule *self, const char *command);
 
-/** Add a command to be executed with a special runtime library path.
- *
- * @param command The additional command.
- * @param ... NULL-terminated list of library directories.
- */
-void
-chaz_MakeRule_add_command_with_libpath(chaz_MakeRule *self,
-                                       const char *command, ...);
-
 /** Add a command to remove one or more files.
  *
  * @param files The list of files.
