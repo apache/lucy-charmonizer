@@ -69,6 +69,12 @@ struct chaz_MakeFile {
     size_t            num_binaries;
 };
 
+typedef struct {
+    chaz_MakeBinary         *binary;
+    chaz_Make_file_filter_t  filter;
+    void                    *filter_ctx;
+} chaz_MakeBinaryContext;
+
 /* Static vars. */
 static struct {
     char *make_command;
@@ -1018,6 +1024,14 @@ chaz_MakeBinary_add_src_file(chaz_MakeBinary *self, const char *dir,
 
 void
 chaz_MakeBinary_add_src_dir(chaz_MakeBinary *self, const char *path) {
+    chaz_MakeBinary_add_filtered_src_dir(self, path, NULL, NULL);
+}
+
+void
+chaz_MakeBinary_add_filtered_src_dir(chaz_MakeBinary *self, const char *path,
+                                     chaz_Make_file_filter_t filter,
+                                     void *filter_ctx) {
+    chaz_MakeBinaryContext context;
     size_t num_dirs = self->num_dirs;
     char **dirs = (char**)realloc(self->dirs, (num_dirs + 2) * sizeof(char*));
 
@@ -1026,18 +1040,27 @@ chaz_MakeBinary_add_src_dir(chaz_MakeBinary *self, const char *path) {
     self->dirs     = dirs;
     self->num_dirs = num_dirs + 1;
 
+    context.binary     = self;
+    context.filter     = filter;
+    context.filter_ctx = filter_ctx;
+
     chaz_Make_list_files(path, "c", S_chaz_MakeBinary_list_files_callback,
-                         self);
+                         &context);
 }
 
 static void
 S_chaz_MakeBinary_list_files_callback(const char *dir, char *file,
-                                      void *context) {
+                                      void *vcontext) {
+    chaz_MakeBinaryContext *context = (chaz_MakeBinaryContext*)vcontext;
     const char *dir_sep = chaz_OS_dir_sep();
-    char *path = chaz_Util_join(dir_sep, dir, file, NULL);
 
-    S_chaz_MakeBinary_do_add_src_file((chaz_MakeBinary*)context, path);
-    free(path);
+    if (context->filter == NULL
+        || context->filter(dir, file, context->filter_ctx) != 0
+       ) {
+        char *path = chaz_Util_join(dir_sep, dir, file, NULL);
+        S_chaz_MakeBinary_do_add_src_file(context->binary, path);
+        free(path);
+    }
 }
 
 static void
@@ -1127,7 +1150,7 @@ chaz_MakeBinary_get_link_flags(chaz_MakeBinary *self) {
 
 void
 chaz_Make_list_files(const char *dir, const char *ext,
-                     chaz_Make_list_files_callback_t callback, void *context) {
+                     chaz_Make_file_callback_t callback, void *context) {
     int         shell_type = chaz_OS_shell_type();
     const char *pattern;
     char       *command;

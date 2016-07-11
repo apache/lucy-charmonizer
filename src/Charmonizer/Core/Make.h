@@ -31,8 +31,10 @@ typedef struct chaz_MakeVar chaz_MakeVar;
 typedef struct chaz_MakeRule chaz_MakeRule;
 typedef struct chaz_MakeBinary chaz_MakeBinary;
 
-typedef void (*chaz_Make_list_files_callback_t)(const char *dir, char *file,
-                                                void *context);
+typedef void
+(*chaz_Make_file_callback_t)(const char *dir, char *file, void *context);
+typedef int
+(*chaz_Make_file_filter_t)(const char *dir, char *file, void *context);
 
 /** Initialize the environment.
  *
@@ -66,7 +68,7 @@ chaz_Make_shell_type(void);
  */
 void
 chaz_Make_list_files(const char *dir, const char *ext,
-                     chaz_Make_list_files_callback_t callback, void *context);
+                     chaz_Make_file_callback_t callback, void *context);
 
 /** MakeFile constructor.
  */
@@ -229,6 +231,19 @@ chaz_MakeBinary_add_src_file(chaz_MakeBinary *self, const char *dir,
  */
 void
 chaz_MakeBinary_add_src_dir(chaz_MakeBinary *self, const char *path);
+
+/** Add .c files in a directory as sources for the binary if they match
+ * a filter.
+ *
+ * @param path The path to the directory.
+ * @param filter A callback that is invoked for every source file. The
+ * source file is only added if the callback returns true. May be NULL.
+ * @param context Context passed to filter.
+ */
+void
+chaz_MakeBinary_add_filtered_src_dir(chaz_MakeBinary *self, const char *path,
+                                     chaz_Make_file_filter_t filter,
+                                     void *context);
 
 /** Add a prerequisite to the make rule of the binary.
  *
