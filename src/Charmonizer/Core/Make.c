@@ -394,7 +394,6 @@ chaz_MakeFile_add_exe(chaz_MakeFile *self, const char *dir,
 
 void
 S_chaz_MakeFile_finish_exe(chaz_MakeFile *self, chaz_MakeBinary *binary) {
-    const char *link = chaz_CC_link_command();
     const char *link_flags_string;
     char *command;
 
@@ -409,8 +408,8 @@ S_chaz_MakeFile_finish_exe(chaz_MakeFile *self, chaz_MakeBinary *binary) {
     /* Objects in dollar var must come before flags since flags may
      * contain libraries.
      */
-    command = chaz_Util_join(" ", link, binary->dollar_var, link_flags_string,
-                             NULL);
+    command = chaz_Util_join(" ", "$(LINK)", binary->dollar_var,
+                             link_flags_string, NULL);
     chaz_MakeRule_add_command(binary->rule, command);
     free(command);
 }
@@ -446,7 +445,6 @@ chaz_MakeFile_add_shared_lib(chaz_MakeFile *self, const char *dir,
 void
 S_chaz_MakeFile_finish_shared_lib(chaz_MakeFile *self,
                                   chaz_MakeBinary *binary) {
-    const char *link = chaz_CC_link_command();
     const char *link_flags_string;
     int binfmt = chaz_CC_binary_format();
     char *no_v_name
@@ -471,8 +469,8 @@ S_chaz_MakeFile_finish_shared_lib(chaz_MakeFile *self,
     chaz_CFlags_set_link_output(binary->link_flags, "$@");
     link_flags_string = chaz_CFlags_get_string(binary->link_flags);
 
-    command = chaz_Util_join(" ", link, binary->dollar_var, link_flags_string,
-                             NULL);
+    command = chaz_Util_join(" ", "$(LINK)", binary->dollar_var,
+                             link_flags_string, NULL);
     chaz_MakeRule_add_command(binary->rule, command);
     free(command);
 
@@ -655,6 +653,9 @@ chaz_MakeFile_write(chaz_MakeFile *self) {
         /* Make sure that mingw32-make uses the cmd.exe shell. */
         fprintf(out, "SHELL = cmd\n");
     }
+
+    fprintf(out, "CC = %s\n", chaz_CC_get_cc());
+    fprintf(out, "LINK = %s\n", chaz_CC_link_command());
 
     for (i = 0; self->vars[i]; i++) {
         chaz_MakeVar *var = self->vars[i];
