@@ -118,12 +118,7 @@ static int
 chaz_LargeFiles_probe_off64(void) {
     static const char off64_code[] =
         CHAZ_QUOTE(  %s                                        )
-        CHAZ_QUOTE(  #include <stdio.h>                        )
-        CHAZ_QUOTE(  int main()                                )
-        CHAZ_QUOTE(  {                                         )
-        CHAZ_QUOTE(      printf("%%d", (int)sizeof(%s));       )
-        CHAZ_QUOTE(      return 0;                             )
-        CHAZ_QUOTE(  }                                         );
+        CHAZ_QUOTE(  int a[sizeof(%s)==8?1:-1];                );
     char code_buf[sizeof(off64_code) + 100];
     int i;
     int success = false;
@@ -137,8 +132,6 @@ chaz_LargeFiles_probe_off64(void) {
 
     for (i = 0; i < num_off64_options; i++) {
         const char *candidate = off64_options[i];
-        char *output;
-        size_t output_len;
         int has_sys_types_h = chaz_HeadCheck_check_header("sys/types.h");
         const char *sys_types_include = has_sys_types_h
                                         ? "#include <sys/types.h>"
@@ -146,15 +139,10 @@ chaz_LargeFiles_probe_off64(void) {
 
         /* Execute the probe. */
         sprintf(code_buf, off64_code, sys_types_include, candidate);
-        output = chaz_CC_capture_output(code_buf, &output_len);
-        if (output != NULL) {
-            long sizeof_candidate = strtol(output, NULL, 10);
-            free(output);
-            if (sizeof_candidate == 8) {
-                strcpy(chaz_LargeFiles.off64_type, candidate);
-                success = true;
-                break;
-            }
+        if (chaz_CC_test_compile(code_buf)) {
+            strcpy(chaz_LargeFiles.off64_type, candidate);
+            success = true;
+            break;
         }
     }
     return success;
@@ -165,20 +153,13 @@ chaz_LargeFiles_try_stdio64(chaz_LargeFiles_stdio64_combo *combo) {
     static const char stdio64_code[] =
         CHAZ_QUOTE(  %s                                         )
         CHAZ_QUOTE(  #include <stdio.h>                         )
-        CHAZ_QUOTE(  int main() {                               )
-        CHAZ_QUOTE(      %s pos;                                )
-        CHAZ_QUOTE(      FILE *f;                               )
-        CHAZ_QUOTE(      f = %s("_charm_stdio64", "w");         )
-        CHAZ_QUOTE(      if (f == NULL) return -1;              )
-        CHAZ_QUOTE(      printf("%%d", (int)sizeof(%s));        )
-        CHAZ_QUOTE(      pos = %s(stdout);                      )
-        CHAZ_QUOTE(      %s(stdout, 0, SEEK_SET);               )
-        CHAZ_QUOTE(      return 0;                              )
+        CHAZ_QUOTE(  int a[sizeof(%s)==8?1:-1];                 )
+        CHAZ_QUOTE(  void f() {                                 )
+        CHAZ_QUOTE(      FILE *f = %s("_charm_stdio64", "w");   )
+        CHAZ_QUOTE(      %s pos = %s(f);                        )
+        CHAZ_QUOTE(      %s(f, 0, SEEK_SET);                    )
         CHAZ_QUOTE(  }                                          );
-    char *output = NULL;
-    size_t output_len;
     char code_buf[sizeof(stdio64_code) + 200];
-    int success = false;
 
     /* Prepare the source code. */
     sprintf(code_buf, stdio64_code, combo->includes,
@@ -187,20 +168,7 @@ chaz_LargeFiles_try_stdio64(chaz_LargeFiles_stdio64_combo *combo) {
             combo->fseek_command);
 
     /* Verify compilation and that the offset type has 8 bytes. */
-    output = chaz_CC_capture_output(code_buf, &output_len);
-    if (output != NULL) {
-        long size = strtol(output, NULL, 10);
-        if (size == 8) {
-            success = true;
-        }
-        free(output);
-    }
-
-    if (!chaz_Util_remove_and_verify("_charm_stdio64")) {
-        chaz_Util_die("Failed to remove '_charm_stdio64'");
-    }
-
-    return success;
+    return chaz_CC_test_compile(code_buf);
 }
 
 static void
