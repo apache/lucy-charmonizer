@@ -174,7 +174,7 @@ chaz_Integers_run(void) {
     }
 
     /* Probe for 64-bit printf format string modifier. */
-    if (has_64) {
+    if (!has_inttypes && has_64) {
         int i;
         const char *options[] = {
             "ll",
@@ -503,7 +503,7 @@ chaz_Integers_run(void) {
         chaz_ConfWriter_add_sys_include("inttypes.h");
     }
 
-    {
+    if (!has_inttypes || !has_intptr_t) {
         /* We support only the following subset of inttypes.h
          *   PRId32
          *   PRIi32
@@ -540,10 +540,9 @@ chaz_Integers_run(void) {
             int c = ptr[0];
 
             if (has_32) {
-                sprintf(scratch, "\"%s%c\"", printf_modifier_32, c);
-
+                macro_name_32[3] = c;
                 if (!has_inttypes) {
-                    macro_name_32[3] = c;
+                    sprintf(scratch, "\"%s%c\"", printf_modifier_32, c);
                     chaz_ConfWriter_add_global_def(macro_name_32, scratch);
                     if (!has_64) {
                         macro_name_max[3] = c;
@@ -553,21 +552,22 @@ chaz_Integers_run(void) {
                 }
                 if (!has_intptr_t && sizeof_ptr == 4) {
                     macro_name_ptr[3] = c;
-                    chaz_ConfWriter_add_global_def(macro_name_ptr, scratch);
+                    chaz_ConfWriter_add_global_def(macro_name_ptr,
+                                                   macro_name_32);
                 }
             }
             if (has_64) {
-                sprintf(scratch, "\"%s%c\"", printf_modifier_64, c);
-
+                macro_name_64[3] = c;
                 if (!has_inttypes) {
-                    macro_name_64[3] = c;
+                    sprintf(scratch, "\"%s%c\"", printf_modifier_64, c);
                     chaz_ConfWriter_add_global_def(macro_name_64, scratch);
                     macro_name_max[3] = c;
                     chaz_ConfWriter_add_global_def(macro_name_max, scratch);
                 }
                 if (!has_intptr_t && sizeof_ptr == 8) {
                     macro_name_ptr[3] = c;
-                    chaz_ConfWriter_add_global_def(macro_name_ptr, scratch);
+                    chaz_ConfWriter_add_global_def(macro_name_ptr,
+                                                   macro_name_64);
                 }
             }
         }
