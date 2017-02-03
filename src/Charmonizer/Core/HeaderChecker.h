@@ -53,6 +53,14 @@ int
 chaz_HeadCheck_contains_member(const char *struct_name, const char *member,
                                const char *includes);
 
+/*
+ * Return the size of the type or 0 if can't be determined. Only checks for
+ * sizes 1, 2, 4, 8. If hint != 0, try this size first to speed up the
+ * detection.
+ */
+int
+chaz_HeadCheck_size_of_type(const char *type, const char *includes, int hint);
+
 #ifdef __cplusplus
 }
 #endif

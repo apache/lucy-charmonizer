@@ -173,6 +173,44 @@ chaz_HeadCheck_contains_member(const char *struct_name, const char *member,
     return retval;
 }
 
+int
+chaz_HeadCheck_size_of_type(const char *type, const char *includes, int hint) {
+    static const char sizeof_code[] =
+        CHAZ_QUOTE(  #include <stddef.h>                           )
+        CHAZ_QUOTE(  %s                                            )
+        CHAZ_QUOTE(  int a[sizeof(%s)==%d?1:-1];                   );
+    size_t needed = sizeof(sizeof_code)
+                    + strlen(type)
+                    + strlen(includes)
+                    + 10;
+    char *buf = (char*)malloc(needed);
+    static const int sizes[] = { 4, 8, 2, 1 };
+    int retval = 0;
+    int i;
+
+    for (i = -1; i < (int)(sizeof(sizes) / sizeof(sizes[0])); i++) {
+        int size;
+
+        if (i < 0) {
+            if (hint != 0) { size = hint; }
+            else           { continue; }
+        }
+        else {
+            if (sizes[i] != hint) { size = sizes[i]; }
+            else                  { continue; }
+        }
+
+        sprintf(buf, sizeof_code, includes, type, size);
+        if (chaz_CC_test_compile(buf)) {
+            retval = size;
+            break;
+        }
+    }
+
+    free(buf);
+    return retval;
+}
+
 static int
 chaz_HeadCheck_compare_headers(const void *vptr_a, const void *vptr_b) {
     chaz_CHeader *const *const a = (chaz_CHeader*const*)vptr_a;

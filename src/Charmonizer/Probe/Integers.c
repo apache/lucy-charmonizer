@@ -28,29 +28,9 @@
 static int
 chaz_Integers_machine_is_big_endian(void);
 
-static const char chaz_Integers_sizes_code[] =
-    CHAZ_QUOTE(  #include <stdio.h>                        )
-    CHAZ_QUOTE(  int main () {                             )
-    CHAZ_QUOTE(      printf("%d ", (int)sizeof(char));     )
-    CHAZ_QUOTE(      printf("%d ", (int)sizeof(short));    )
-    CHAZ_QUOTE(      printf("%d ", (int)sizeof(int));      )
-    CHAZ_QUOTE(      printf("%d ", (int)sizeof(long));     )
-    CHAZ_QUOTE(      printf("%d ", (int)sizeof(void*));    )
-    CHAZ_QUOTE(      printf("%d ", (int)sizeof(size_t));   )
-    CHAZ_QUOTE(      return 0;                             )
-    CHAZ_QUOTE(  }                                         );
-
 static const char chaz_Integers_stdint_type_code[] =
     CHAZ_QUOTE(  #include <stdint.h>                       )
     CHAZ_QUOTE(  %s i;                                     );
-
-static const char chaz_Integers_type64_code[] =
-    CHAZ_QUOTE(  #include <stdio.h>                        )
-    CHAZ_QUOTE(  int main()                                )
-    CHAZ_QUOTE(  {                                         )
-    CHAZ_QUOTE(      printf("%%d", (int)sizeof(%s));       )
-    CHAZ_QUOTE(      return 0;                             )
-    CHAZ_QUOTE(  }                                         );
 
 static const char chaz_Integers_literal64_code[] =
     CHAZ_QUOTE(  int f() { return (int)9000000000000000000%s; }  );
@@ -98,42 +78,24 @@ chaz_Integers_run(void) {
     }
 
     /* Record sizeof() for several common integer types. */
-    output = chaz_CC_capture_output(chaz_Integers_sizes_code, &output_len);
-    if (output != NULL) {
-        char *ptr     = output;
-        char *end_ptr = output;
-
-        sizeof_char   = strtol(ptr, &end_ptr, 10);
-        ptr           = end_ptr;
-        sizeof_short  = strtol(ptr, &end_ptr, 10);
-        ptr           = end_ptr;
-        sizeof_int    = strtol(ptr, &end_ptr, 10);
-        ptr           = end_ptr;
-        sizeof_long   = strtol(ptr, &end_ptr, 10);
-        ptr           = end_ptr;
-        sizeof_ptr    = strtol(ptr, &end_ptr, 10);
-        ptr           = end_ptr;
-        sizeof_size_t = strtol(ptr, &end_ptr, 10);
-
-        free(output);
-    }
+    sizeof_char   = chaz_HeadCheck_size_of_type("char",  "", 1);
+    sizeof_short  = chaz_HeadCheck_size_of_type("short", "", 2);
+    sizeof_int    = chaz_HeadCheck_size_of_type("int",   "", 4);
+    sizeof_long   = chaz_HeadCheck_size_of_type("long",  "", 4);
+    sizeof_ptr    = chaz_HeadCheck_size_of_type("void*", "", 4);
+    sizeof_size_t = chaz_HeadCheck_size_of_type("size_t",
+                                                "#include <stddef.h>", 4);
 
     /* Determine whether long longs are available. */
-    sprintf(code_buf, chaz_Integers_type64_code, "long long");
-    output = chaz_CC_capture_output(code_buf, &output_len);
-    if (output != NULL) {
+    if (chaz_CC_test_compile("long long l;")) {
         has_long_long    = true;
-        sizeof_long_long = strtol(output, NULL, 10);
-        free(output);
+        sizeof_long_long = chaz_HeadCheck_size_of_type("long long", "", 8);
     }
 
     /* Determine whether the __int64 type is available. */
-    sprintf(code_buf, chaz_Integers_type64_code, "__int64");
-    output = chaz_CC_capture_output(code_buf, &output_len);
-    if (output != NULL) {
+    if (chaz_CC_test_compile("__int64 i;")) {
         has___int64 = true;
-        sizeof___int64 = strtol(output, NULL, 10);
-        free(output);
+        sizeof___int64 = chaz_HeadCheck_size_of_type("__int64", "", 8);
     }
 
     /* Determine whether the intptr_t type is available (it's optional in
