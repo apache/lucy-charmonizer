@@ -507,7 +507,7 @@ S_chaz_MakeFile_finish_shared_lib(chaz_MakeFile *self,
         free(filename);
     }
 
-    if (chaz_CC_msvc_version_num()) {
+    if (chaz_CC_is_msvc()) {
         /* Remove export file. */
         char *filename
             = chaz_CC_export_filename(binary->target_dir, binary->basename,
@@ -674,7 +674,7 @@ chaz_MakeFile_write(chaz_MakeFile *self) {
     S_chaz_MakeRule_write(self->distclean, out);
 
     /* Suffix rule for .c files. */
-    if (chaz_CC_msvc_version_num()) {
+    if (chaz_CC_is_msvc()) {
         fprintf(out, ".c.obj :\n");
         fprintf(out, "\t$(CC) /nologo $(CFLAGS) /c $< /Fo$@\n\n");
     }
@@ -691,7 +691,7 @@ S_chaz_MakeFile_write_binary_rules(chaz_MakeFile *self,
                                    chaz_MakeBinary *binary, FILE *out) {
     const char *cflags;
 
-    if (chaz_CC_msvc_version_num()) {
+    if (chaz_CC_is_msvc()) {
         chaz_CFlags_append(binary->compile_flags, "/nologo");
         chaz_CFlags_append(binary->link_flags, "/nologo");
     }

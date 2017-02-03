@@ -71,6 +71,12 @@ chaz_CC_capture_output(const char *source, size_t *output_len);
 int
 chaz_CC_has_macro(const char *macro);
 
+/** Return true if preprocessor expression matches predicate. Predicate has
+ * the form "<op> value", e.g. ">= 0x1500".
+ */
+int
+chaz_CC_test_macro(const char *expression, const char *predicate);
+
 /** Initialize the compiler environment.
  */
 void
@@ -137,22 +143,28 @@ const char*
 chaz_CC_obj_ext(void);
 
 int
-chaz_CC_gcc_version_num(void);
-
-const char*
-chaz_CC_gcc_version(void);
+chaz_CC_is_gcc(void);
 
 int
-chaz_CC_msvc_version_num(void);
+chaz_CC_is_msvc(void);
 
 int
-chaz_CC_sun_c_version_num(void);
+chaz_CC_is_sun_c(void);
 
 int
 chaz_CC_is_cygwin(void);
 
 int
 chaz_CC_is_mingw(void);
+
+int
+chaz_CC_test_gcc_version(const char *predicate);
+
+int
+chaz_CC_test_msvc_version(const char *predicate);
+
+int
+chaz_CC_test_sun_c_version(const char *predicate);
 
 const char*
 chaz_CC_link_command(void);

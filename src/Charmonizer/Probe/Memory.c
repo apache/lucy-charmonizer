@@ -65,7 +65,7 @@ chaz_Memory_probe_alloca(void) {
     /* Under GCC, alloca is a builtin that works without including the
      * correct header, generating only a warning. To avoid misdetection,
      * disable the alloca builtin temporarily. */
-    if (chaz_CC_gcc_version_num()) {
+    if (chaz_CC_is_gcc()) {
         chaz_CFlags_append(temp_cflags, "-fno-builtin-alloca");
     }
 

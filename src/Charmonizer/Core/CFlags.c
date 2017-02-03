@@ -235,8 +235,16 @@ chaz_CFlags_hide_symbols(chaz_CFlags *flags) {
         }
     }
     else if (flags->style == CHAZ_CFLAGS_STYLE_SUN_C) {
-        if (chaz_CC_sun_c_version_num() >= 0x550) {
-            /* Sun Studio 8. */
+        static int checked = 0;
+        static int version_ge_550;
+
+        if (!checked) {
+            /* Requires Sun Studio 8. */
+            version_ge_550 = chaz_CC_test_sun_c_version(">= 0x550");
+            checked = 1;
+        }
+
+        if (version_ge_550) {
             chaz_CFlags_append(flags, "-xldscope=hidden");
         }
     }

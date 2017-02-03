@@ -27,11 +27,6 @@
 static void
 chaz_CC_detect_binary_format(const char *filename);
 
-/** Return the numeric value of a macro or 0 if it isn't defined.
- */
-static int
-chaz_CC_eval_macro(const char *macro);
-
 /* Detect macros which may help to identify some compilers.
  */
 static void
@@ -62,12 +57,10 @@ static struct {
     char      gcc_version_str[30];
     int       binary_format;
     int       cflags_style;
-    int       intval___GNUC__;
-    int       intval___GNUC_MINOR__;
-    int       intval___GNUC_PATCHLEVEL__;
-    int       intval__MSC_VER;
-    int       intval___clang__;
-    int       intval___SUNPRO_C;
+    int       is_gcc;
+    int       is_msvc;
+    int       is_clang;
+    int       is_sun_c;
     int       is_cygwin;
     int       is_mingw;
     chaz_CFlags *extra_cflags;
@@ -75,7 +68,7 @@ static struct {
 } chaz_CC = {
     NULL, NULL, NULL,
     "", "", "", "", "", "",
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
     NULL, NULL
 };
 
@@ -110,6 +103,9 @@ chaz_CC_init(const char *compiler_command, const char *compiler_flags) {
         }
         compile_succeeded = chaz_CC_compile_exe(CHAZ_CC_TRY_SOURCE_PATH,
                                                 CHAZ_CC_TRY_BASENAME, code);
+        if (compile_succeeded) {
+            strcpy(chaz_CC.obj_ext, ".obj");
+        }
     }
 
     /* Try POSIX argument style. */
@@ -120,6 +116,9 @@ chaz_CC_init(const char *compiler_command, const char *compiler_flags) {
         }
         compile_succeeded = chaz_CC_compile_exe(CHAZ_CC_TRY_SOURCE_PATH,
                                                 CHAZ_CC_TRY_BASENAME, code);
+        if (compile_succeeded) {
+            strcpy(chaz_CC.obj_ext, ".o");
+        }
     }
 
     if (!compile_succeeded) {
@@ -130,13 +129,13 @@ chaz_CC_init(const char *compiler_command, const char *compiler_flags) {
 
     chaz_CC_detect_known_compilers();
 
-    if (chaz_CC.intval___GNUC__) {
+    if (chaz_CC_is_gcc()) {
         chaz_CC.cflags_style = CHAZ_CFLAGS_STYLE_GNU;
     }
-    else if (chaz_CC.intval__MSC_VER) {
+    else if (chaz_CC_is_msvc()) {
         chaz_CC.cflags_style = CHAZ_CFLAGS_STYLE_MSVC;
     }
-    else if (chaz_CC.intval___SUNPRO_C) {
+    else if (chaz_CC_is_sun_c()) {
         chaz_CC.cflags_style = CHAZ_CFLAGS_STYLE_SUN_C;
     }
     else {
@@ -170,7 +169,7 @@ chaz_CC_init(const char *compiler_command, const char *compiler_flags) {
         }
         strcpy(chaz_CC.exe_ext, ".exe");
         strcpy(chaz_CC.shared_lib_ext, ".dll");
-        if (chaz_CC.intval___GNUC__) {
+        if (chaz_CC_is_gcc()) {
             strcpy(chaz_CC.static_lib_ext, ".a");
             strcpy(chaz_CC.import_lib_ext, ".dll.a");
             strcpy(chaz_CC.obj_ext, ".o");
@@ -244,43 +243,40 @@ chaz_CC_detect_binary_format(const char *filename) {
     free(output);
 }
 
-static const char chaz_CC_eval_macro_code[] =
-    CHAZ_QUOTE(  #include <stdio.h>             )
-    CHAZ_QUOTE(  int main() {                   )
-    CHAZ_QUOTE(  #ifndef %s                     )
-    CHAZ_QUOTE(  #error "nope"                  )
-    CHAZ_QUOTE(  #endif                         )
-    CHAZ_QUOTE(      printf("%%d", %s);         )
-    CHAZ_QUOTE(      return 0;                  )
-    CHAZ_QUOTE(  }                              );
-
-static int
-chaz_CC_eval_macro(const char *macro) {
-    size_t size = sizeof(chaz_CC_eval_macro_code)
-                  + (strlen(macro) * 2)
+int
+chaz_CC_has_macro(const char *macro) {
+    static const char template[] =
+        CHAZ_QUOTE(  #ifdef %s             )
+        CHAZ_QUOTE(  int i;                )
+        CHAZ_QUOTE(  #else                 )
+        CHAZ_QUOTE(  #error "nope"         )
+        CHAZ_QUOTE(  #endif                );
+    size_t size = sizeof(template)
+                  + strlen(macro)
                   + 20;
     char *code = (char*)malloc(size);
     int retval = 0;
-    char *output;
-    size_t len;
-    sprintf(code, chaz_CC_eval_macro_code, macro, macro);
-    output = chaz_CC_capture_output(code, &len);
-    if (output) {
-        retval = atoi(output);
-        free(output);
-    }
+    sprintf(code, template, macro);
+    retval = chaz_CC_test_compile(code);
     free(code);
     return retval;
 }
 
 int
-chaz_CC_has_macro(const char *macro) {
-    size_t size = sizeof(chaz_CC_eval_macro_code)
-                  + (strlen(macro) * 2)
+chaz_CC_test_macro(const char *expression, const char *predicate) {
+    static const char template[] =
+        CHAZ_QUOTE(  #if (%s) %s           )
+        CHAZ_QUOTE(  int i;                )
+        CHAZ_QUOTE(  #else                 )
+        CHAZ_QUOTE(  #error "nope"         )
+        CHAZ_QUOTE(  #endif                );
+    size_t size = sizeof(template)
+                  + strlen(expression)
+                  + strlen(predicate)
                   + 20;
     char *code = (char*)malloc(size);
     int retval = 0;
-    sprintf(code, chaz_CC_eval_macro_code, macro, macro);
+    sprintf(code, template, expression, predicate);
     retval = chaz_CC_test_compile(code);
     free(code);
     return retval;
@@ -288,19 +284,10 @@ chaz_CC_has_macro(const char *macro) {
 
 static void
 chaz_CC_detect_known_compilers(void) {
-    chaz_CC.intval___GNUC__  = chaz_CC_eval_macro("__GNUC__");
-    if (chaz_CC.intval___GNUC__) {
-        chaz_CC.intval___GNUC_MINOR__
-            = chaz_CC_eval_macro("__GNUC_MINOR__");
-        chaz_CC.intval___GNUC_PATCHLEVEL__
-            = chaz_CC_eval_macro("__GNUC_PATCHLEVEL__");
-        sprintf(chaz_CC.gcc_version_str, "%d.%d.%d", chaz_CC.intval___GNUC__,
-                chaz_CC.intval___GNUC_MINOR__,
-                chaz_CC.intval___GNUC_PATCHLEVEL__);
-    }
-    chaz_CC.intval__MSC_VER   = chaz_CC_eval_macro("_MSC_VER");
-    chaz_CC.intval___clang__  = chaz_CC_eval_macro("__clang__");
-    chaz_CC.intval___SUNPRO_C = chaz_CC_eval_macro("__SUNPRO_C");
+    chaz_CC.is_gcc   = chaz_CC_has_macro("__GNUC__");
+    chaz_CC.is_msvc  = chaz_CC_has_macro("_MSC_VER");
+    chaz_CC.is_clang = chaz_CC_has_macro("__clang__");
+    chaz_CC.is_sun_c = chaz_CC_has_macro("__SUNPRO_C");
 }
 
 void
@@ -346,7 +333,7 @@ chaz_CC_compile_exe(const char *source_path, const char *exe_name,
         system(command);
     }
 
-    if (chaz_CC.intval__MSC_VER) {
+    if (chaz_CC_is_msvc()) {
         /* Zap MSVC junk. */
         size_t  junk_buf_size = strlen(exe_file) + 4;
         char   *junk          = (char*)malloc(junk_buf_size);
@@ -534,25 +521,18 @@ chaz_CC_obj_ext(void) {
 }
 
 int
-chaz_CC_gcc_version_num(void) {
-    return 10000 * chaz_CC.intval___GNUC__
-           + 100 * chaz_CC.intval___GNUC_MINOR__
-           + chaz_CC.intval___GNUC_PATCHLEVEL__;
-}
-
-const char*
-chaz_CC_gcc_version(void) {
-    return chaz_CC.intval___GNUC__ ? chaz_CC.gcc_version_str : NULL;
+chaz_CC_is_gcc(void) {
+    return chaz_CC.is_gcc;
 }
 
 int
-chaz_CC_msvc_version_num(void) {
-    return chaz_CC.intval__MSC_VER;
+chaz_CC_is_msvc(void) {
+    return chaz_CC.is_msvc;
 }
 
 int
-chaz_CC_sun_c_version_num(void) {
-    return chaz_CC.intval___SUNPRO_C;
+chaz_CC_is_sun_c(void) {
+    return chaz_CC.is_sun_c;
 }
 
 int
@@ -565,9 +545,26 @@ chaz_CC_is_mingw(void) {
     return chaz_CC.is_mingw;
 }
 
+int
+chaz_CC_test_gcc_version(const char *predicate) {
+    static const char version[] =
+        "10000 * __GNUC__ + 100 * __GNUC_MINOR__ + __GNUC_PATCHLEVEL__";
+    return chaz_CC_test_macro(version, predicate);
+}
+
+int
+chaz_CC_test_msvc_version(const char *predicate) {
+    return chaz_CC_test_macro("_MSC_VER", predicate);
+}
+
+int
+chaz_CC_test_sun_c_version(const char *predicate) {
+    return chaz_CC_test_macro("__SUNPRO_C", predicate);
+}
+
 const char*
 chaz_CC_link_command() {
-    if (chaz_CC.intval__MSC_VER) {
+    if (chaz_CC_is_msvc()) {
         return "link";
     }
     else {
@@ -577,7 +574,7 @@ chaz_CC_link_command() {
 
 char*
 chaz_CC_format_archiver_command(const char *target, const char *objects) {
-    if (chaz_CC.intval__MSC_VER) {
+    if (chaz_CC_is_msvc()) {
         /* TODO: Write `objects` to a temporary file in order to avoid
          * exceeding line length limits. */
         char *out = chaz_Util_join("", "/OUT:", target, NULL);
@@ -593,7 +590,7 @@ chaz_CC_format_archiver_command(const char *target, const char *objects) {
 
 char*
 chaz_CC_format_ranlib_command(const char *target) {
-    if (chaz_CC.intval__MSC_VER) {
+    if (chaz_CC_is_msvc()) {
         return NULL;
     }
     return chaz_Util_join(" ", "ranlib", target, NULL);
@@ -603,7 +600,7 @@ char*
 chaz_CC_shared_lib_filename(const char *dir, const char *basename,
                             const char *version) {
     /* Cygwin uses a "cyg" prefix for shared libraries. */
-    const char *prefix = chaz_CC_msvc_version_num()
+    const char *prefix = chaz_CC_is_msvc()
                          ? ""
                          : chaz_CC_is_cygwin() ? "cyg" : "lib";
     return chaz_CC_build_lib_filename(dir, prefix, basename, version,
@@ -613,7 +610,7 @@ chaz_CC_shared_lib_filename(const char *dir, const char *basename,
 char*
 chaz_CC_import_lib_filename(const char *dir, const char *basename,
                             const char *version) {
-    const char *prefix = chaz_CC_msvc_version_num() ? "" : "lib";
+    const char *prefix = chaz_CC_is_msvc() ? "" : "lib";
     return chaz_CC_build_lib_filename(dir, prefix, basename, version,
                                       chaz_CC.import_lib_ext);
 }
@@ -668,7 +665,7 @@ chaz_CC_build_lib_filename(const char *dir, const char *prefix,
 
 char*
 chaz_CC_static_lib_filename(const char *dir, const char *basename) {
-    const char *prefix = chaz_CC_msvc_version_num() ? "" : "lib";
+    const char *prefix = chaz_CC_is_msvc() ? "" : "lib";
 
     if (dir == NULL || strcmp(dir, ".") == 0) {
         return chaz_Util_join("", prefix, basename, chaz_CC.static_lib_ext,

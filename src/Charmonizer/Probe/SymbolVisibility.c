@@ -59,7 +59,7 @@ chaz_SymbolVisibility_run(void) {
         if (chaz_CC_test_compile(code_buf)) {
             can_control_visibility = true;
             chaz_ConfWriter_add_def("EXPORT", export_win);
-            if (chaz_CC_gcc_version_num()) {
+            if (chaz_CC_is_gcc()) {
                 /*
                  * Under MinGW, symbols with dllimport storage class aren't
                  * constant. If a global variable is initialized to such a

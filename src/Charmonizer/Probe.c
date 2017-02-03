@@ -171,18 +171,3 @@ chaz_Probe_clean_up(void) {
 
     if (chaz_Util_verbosity) { printf("Cleanup complete.\n"); }
 }
-
-int
-chaz_Probe_gcc_version_num(void) {
-    return chaz_CC_gcc_version_num();
-}
-
-const char*
-chaz_Probe_gcc_version(void) {
-    return chaz_CC_gcc_version_num() ? chaz_CC_gcc_version() : NULL;
-}
-
-int
-chaz_Probe_msvc_version_num(void) {
-    return chaz_CC_msvc_version_num();
-}
