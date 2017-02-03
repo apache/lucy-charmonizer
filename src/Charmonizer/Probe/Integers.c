@@ -173,47 +173,6 @@ chaz_Integers_run(void) {
         }
     }
 
-    /* Probe for 64-bit printf format string modifier. */
-    if (!has_inttypes && has_64) {
-        int i;
-        const char *options[] = {
-            "ll",
-            "l",
-            "L",
-            "q",   /* Some *BSDs */
-            "I64", /* Microsoft */
-            NULL,
-        };
-
-        /* Buffer to hold the code, and its start and end. */
-        static const char format_64_code[] =
-            CHAZ_QUOTE(  #include <stdio.h>                            )
-            CHAZ_QUOTE(  int main() {                                  )
-            CHAZ_QUOTE(      printf("%%%su", 18446744073709551615%s);  )
-            CHAZ_QUOTE(      return 0;                                 )
-            CHAZ_QUOTE( }                                              );
-
-        for (i = 0; options[i] != NULL; i++) {
-            /* Try to print 2**64-1, and see if we get it back intact. */
-            int success;
-            sprintf(code_buf, format_64_code, options[i], u64_t_postfix);
-            output = chaz_CC_capture_output(code_buf, &output_len);
-            success = output != NULL
-                      && strcmp(output, "18446744073709551615") == 0;
-            free(output);
-
-            if (success) {
-                break;
-            }
-        }
-
-        if (options[i] == NULL) {
-            chaz_Util_die("64-bit types, but no printf modifier found");
-        }
-
-        strcpy(printf_modifier_64, options[i]);
-    }
-
     /* Write out some conditional defines. */
     if (has_inttypes) {
         chaz_ConfWriter_add_def("HAS_INTTYPES_H", NULL);
@@ -501,6 +460,47 @@ chaz_Integers_run(void) {
             chaz_ConfWriter_add_sys_include("stdlib.h");
         }
         chaz_ConfWriter_add_sys_include("inttypes.h");
+    }
+
+    /* Probe for 64-bit printf format string modifier. */
+    if (!has_inttypes && has_64) {
+        int i;
+        const char *options[] = {
+            "ll",
+            "l",
+            "L",
+            "q",   /* Some *BSDs */
+            "I64", /* Microsoft */
+            NULL,
+        };
+
+        /* Buffer to hold the code, and its start and end. */
+        static const char format_64_code[] =
+            CHAZ_QUOTE(  #include <stdio.h>                            )
+            CHAZ_QUOTE(  int main() {                                  )
+            CHAZ_QUOTE(      printf("%%%su", 18446744073709551615%s);  )
+            CHAZ_QUOTE(      return 0;                                 )
+            CHAZ_QUOTE( }                                              );
+
+        for (i = 0; options[i] != NULL; i++) {
+            /* Try to print 2**64-1, and see if we get it back intact. */
+            int success;
+            sprintf(code_buf, format_64_code, options[i], u64_t_postfix);
+            output = chaz_CC_capture_output(code_buf, &output_len);
+            success = output != NULL
+                      && strcmp(output, "18446744073709551615") == 0;
+            free(output);
+
+            if (success) {
+                break;
+            }
+        }
+
+        if (options[i] == NULL) {
+            chaz_Util_die("64-bit types, but no printf modifier found");
+        }
+
+        strcpy(printf_modifier_64, options[i]);
     }
 
     if (!has_inttypes || !has_intptr_t) {
