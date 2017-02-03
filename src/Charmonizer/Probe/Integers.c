@@ -42,12 +42,7 @@ static const char chaz_Integers_sizes_code[] =
 
 static const char chaz_Integers_stdint_type_code[] =
     CHAZ_QUOTE(  #include <stdint.h>                       )
-    CHAZ_QUOTE(  #include <stdio.h>                        )
-    CHAZ_QUOTE(  int main()                                )
-    CHAZ_QUOTE(  {                                         )
-    CHAZ_QUOTE(      printf("%%d", (int)sizeof(%s));       )
-    CHAZ_QUOTE(      return 0;                             )
-    CHAZ_QUOTE(  }                                         );
+    CHAZ_QUOTE(  %s i;                                     );
 
 static const char chaz_Integers_type64_code[] =
     CHAZ_QUOTE(  #include <stdio.h>                        )
@@ -58,14 +53,7 @@ static const char chaz_Integers_type64_code[] =
     CHAZ_QUOTE(  }                                         );
 
 static const char chaz_Integers_literal64_code[] =
-    CHAZ_QUOTE(  #include <stdio.h>                        )
-    CHAZ_QUOTE(  #define big 9000000000000000000%s         )
-    CHAZ_QUOTE(  int main()                                )
-    CHAZ_QUOTE(  {                                         )
-    CHAZ_QUOTE(      int truncated = (int)big;             )
-    CHAZ_QUOTE(      printf("%%d\n", truncated);           )
-    CHAZ_QUOTE(      return 0;                             )
-    CHAZ_QUOTE(  }                                         );
+    CHAZ_QUOTE(  int f() { return (int)9000000000000000000%s; }  );
 
 void
 chaz_Integers_run(void) {
@@ -151,10 +139,8 @@ chaz_Integers_run(void) {
     /* Determine whether the intptr_t type is available (it's optional in
      * C99). */
     sprintf(code_buf, chaz_Integers_stdint_type_code, "intptr_t");
-    output = chaz_CC_capture_output(code_buf, &output_len);
-    if (output != NULL) {
+    if (chaz_CC_test_compile(code_buf)) {
         has_intptr_t = true;
-        free(output);
     }
 
     /* Figure out which integer types are available. */
@@ -198,34 +184,26 @@ chaz_Integers_run(void) {
     }
     else if (has_64) {
         sprintf(code_buf, chaz_Integers_literal64_code, "LL");
-        output = chaz_CC_capture_output(code_buf, &output_len);
-        if (output != NULL) {
+        if (chaz_CC_test_compile(code_buf)) {
             strcpy(i64_t_postfix, "LL");
-            free(output);
         }
         else {
             sprintf(code_buf, chaz_Integers_literal64_code, "i64");
-            output = chaz_CC_capture_output(code_buf, &output_len);
-            if (output != NULL) {
+            if (chaz_CC_test_compile(code_buf)) {
                 strcpy(i64_t_postfix, "i64");
-                free(output);
             }
             else {
                 chaz_Util_die("64-bit types, but no literal syntax found");
             }
         }
         sprintf(code_buf, chaz_Integers_literal64_code, "ULL");
-        output = chaz_CC_capture_output(code_buf, &output_len);
-        if (output != NULL) {
+        if (chaz_CC_test_compile(code_buf)) {
             strcpy(u64_t_postfix, "ULL");
-            free(output);
         }
         else {
             sprintf(code_buf, chaz_Integers_literal64_code, "Ui64");
-            output = chaz_CC_capture_output(code_buf, &output_len);
-            if (output != NULL) {
+            if (chaz_CC_test_compile(code_buf)) {
                 strcpy(u64_t_postfix, "Ui64");
-                free(output);
             }
             else {
                 chaz_Util_die("64-bit types, but no literal syntax found");

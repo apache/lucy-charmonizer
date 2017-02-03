@@ -26,48 +26,35 @@
 /* Code for verifying ISO-style variadic macros. */
 static const char chaz_VariadicMacros_iso_code[] =
     CHAZ_QUOTE(  #include <stdio.h>                                    )
-    CHAZ_QUOTE(  #define ISO_TEST(fmt, ...) \\                         )
-    "                printf(fmt, __VA_ARGS__)                        \n"
-    CHAZ_QUOTE(  int main() {                                          )
-    CHAZ_QUOTE(      ISO_TEST("%d %d", 1, 1);                          )
-    CHAZ_QUOTE(      return 0;                                         )
-    CHAZ_QUOTE(  }                                                     );
+                "#define ISO_TEST(fmt, ...) printf(fmt, __VA_ARGS__)\n"
+    CHAZ_QUOTE(  void f() { ISO_TEST("%d %d", 1, 1); }                 );
 
 /* Code for verifying GNU-style variadic macros. */
 static const char chaz_VariadicMacros_gnuc_code[] =
     CHAZ_QUOTE(  #include <stdio.h>                                    )
     CHAZ_QUOTE(  #define GNU_TEST(fmt, args...) printf(fmt, ##args)    )
-    CHAZ_QUOTE(  int main() {                                          )
-    CHAZ_QUOTE(      GNU_TEST("%d %d", 1, 1);                          )
-    CHAZ_QUOTE(      return 0;                                         )
-    CHAZ_QUOTE(  }                                                     );
+    CHAZ_QUOTE(  void f() { GNU_TEST("%d %d", 1, 1); }                 );
 
 void
 chaz_VariadicMacros_run(void) {
-    char *output;
-    size_t output_len;
     int has_varmacros = false;
 
     chaz_ConfWriter_start_module("VariadicMacros");
 
     /* Test for ISO-style variadic macros. */
-    output = chaz_CC_capture_output(chaz_VariadicMacros_iso_code, &output_len);
-    if (output != NULL) {
+    if (chaz_CC_test_compile(chaz_VariadicMacros_iso_code)) {
         has_varmacros = true;
         chaz_ConfWriter_add_def("HAS_VARIADIC_MACROS", NULL);
         chaz_ConfWriter_add_def("HAS_ISO_VARIADIC_MACROS", NULL);
-        free(output);
     }
 
     /* Test for GNU-style variadic macros. */
-    output = chaz_CC_capture_output(chaz_VariadicMacros_gnuc_code, &output_len);
-    if (output != NULL) {
+    if (chaz_CC_test_compile(chaz_VariadicMacros_gnuc_code)) {
         if (has_varmacros == false) {
             has_varmacros = true;
             chaz_ConfWriter_add_def("HAS_VARIADIC_MACROS", NULL);
         }
         chaz_ConfWriter_add_def("HAS_GNUC_VARIADIC_MACROS", NULL);
-        free(output);
     }
 
     chaz_ConfWriter_end_module();

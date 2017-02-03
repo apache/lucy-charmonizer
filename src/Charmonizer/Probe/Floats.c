@@ -71,34 +71,30 @@ chaz_Floats_run(void) {
 
 const char*
 chaz_Floats_math_library(void) {
+    /*
+     * The cast to a specific function pointer type is required because
+     * C++ overloads sqrt.
+     */
     static const char sqrt_code[] =
         CHAZ_QUOTE(  #include <math.h>                              )
-        CHAZ_QUOTE(  #include <stdio.h>                             )
         CHAZ_QUOTE(  typedef double (*sqrt_t)(double);              )
-        CHAZ_QUOTE(  int main(void) {                               )
-        CHAZ_QUOTE(      printf("%p\n", (sqrt_t)sqrt);              )
-        CHAZ_QUOTE(      return 0;                                  )
-        CHAZ_QUOTE(  }                                              );
+        CHAZ_QUOTE(  int main() { return (int)(sqrt_t)sqrt; }       );
     chaz_CFlags *temp_cflags = chaz_CC_get_temp_cflags();
-    char        *output = NULL;
-    size_t       output_len;
+    int success;
 
-    output = chaz_CC_capture_output(sqrt_code, &output_len);
-    if (output != NULL) {
+    if (chaz_CC_test_link(sqrt_code)) {
         /* Linking against libm not needed. */
-        free(output);
         return NULL;
     }
 
     chaz_CFlags_add_external_lib(temp_cflags, "m");
-    output = chaz_CC_capture_output(sqrt_code, &output_len);
+    success = chaz_CC_test_link(sqrt_code);
     chaz_CFlags_clear(temp_cflags);
 
-    if (output == NULL) {
+    if (!success) {
         chaz_Util_die("Don't know how to use math library.");
     }
 
-    free(output);
     return "m";
 }
 

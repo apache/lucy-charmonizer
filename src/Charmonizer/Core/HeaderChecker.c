@@ -132,18 +132,13 @@ chaz_HeadCheck_check_many_headers(const char **header_names) {
 
 int
 chaz_HeadCheck_defines_symbol(const char *symbol, const char *includes) {
-    /*
-     * Casting function pointers to object pointers like 'char*' is a C
-     * extension, so for a bullet-proof check, a separate test for functions
-     * might be necessary.
-     */
     static const char defines_code[] =
         CHAZ_QUOTE(  %s                                            )
         CHAZ_QUOTE(  int main() {                                  )
         CHAZ_QUOTE(  #ifdef %s                                     )
         CHAZ_QUOTE(      return 0;                                 )
         CHAZ_QUOTE(  #else                                         )
-        CHAZ_QUOTE(      return *(char*)&%s;                       )
+        CHAZ_QUOTE(      return (int)&%s;                          )
         CHAZ_QUOTE(  #endif                                        )
         CHAZ_QUOTE(  }                                             );
     long needed = sizeof(defines_code)

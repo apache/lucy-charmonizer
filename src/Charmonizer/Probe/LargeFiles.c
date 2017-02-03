@@ -231,35 +231,13 @@ chaz_LargeFiles_probe_stdio64(void) {
 static int
 chaz_LargeFiles_probe_lseek(chaz_LargeFiles_unbuff_combo *combo) {
     static const char lseek_code[] =
-        CHAZ_QUOTE( %s                                                       )
-        CHAZ_QUOTE( #include <stdio.h>                                       )
-        CHAZ_QUOTE( int main() {                                             )
-        CHAZ_QUOTE(     int fd;                                              )
-        CHAZ_QUOTE(     fd = open("_charm_lseek", O_WRONLY | O_CREAT, 0666); )
-        CHAZ_QUOTE(     if (fd == -1) { return -1; }                         )
-        CHAZ_QUOTE(     %s(fd, 0, SEEK_SET);                                 )
-        CHAZ_QUOTE(     printf("%%d", 1);                                    )
-        CHAZ_QUOTE(     if (close(fd)) { return -1; }                        )
-        CHAZ_QUOTE(     return 0;                                            )
-        CHAZ_QUOTE( }                                                        );
+        CHAZ_QUOTE( %s                                      )
+        CHAZ_QUOTE( void f() { %s(0, 0, SEEK_SET); }        );
     char code_buf[sizeof(lseek_code) + 100];
-    char *output = NULL;
-    size_t output_len;
-    int success = false;
 
     /* Verify compilation. */
     sprintf(code_buf, lseek_code, combo->includes, combo->lseek_command);
-    output = chaz_CC_capture_output(code_buf, &output_len);
-    if (output != NULL) {
-        success = true;
-        free(output);
-    }
-
-    if (!chaz_Util_remove_and_verify("_charm_lseek")) {
-        chaz_Util_die("Failed to remove '_charm_lseek'");
-    }
-
-    return success;
+    return chaz_CC_test_compile(code_buf);
 }
 
 static int
@@ -268,28 +246,15 @@ chaz_LargeFiles_probe_pread64(chaz_LargeFiles_unbuff_combo *combo) {
      * fine as long as it compiles. */
     static const char pread64_code[] =
         CHAZ_QUOTE(  %s                                     )
-        CHAZ_QUOTE(  #include <stdio.h>                     )
-        CHAZ_QUOTE(  int main() {                           )
-        CHAZ_QUOTE(      int fd = 20;                       )
+        CHAZ_QUOTE(  void f() {                             )
         CHAZ_QUOTE(      char buf[1];                       )
-        CHAZ_QUOTE(      printf("1");                       )
-        CHAZ_QUOTE(      %s(fd, buf, 1, 1);                 )
-        CHAZ_QUOTE(      return 0;                          )
+        CHAZ_QUOTE(      %s(0, buf, 1, 1);                  )
         CHAZ_QUOTE(  }                                      );
     char code_buf[sizeof(pread64_code) + 100];
-    char *output = NULL;
-    size_t output_len;
-    int success = false;
 
     /* Verify compilation. */
     sprintf(code_buf, pread64_code, combo->includes, combo->pread64_command);
-    output = chaz_CC_capture_output(code_buf, &output_len);
-    if (output != NULL) {
-        success = true;
-        free(output);
-    }
-
-    return success;
+    return chaz_CC_test_compile(code_buf);
 }
 
 static void
@@ -297,7 +262,7 @@ chaz_LargeFiles_probe_unbuff(void) {
     static chaz_LargeFiles_unbuff_combo unbuff_combos[] = {
         { "#include <unistd.h>\n#include <fcntl.h>\n", "lseek64",   "pread64" },
         { "#include <unistd.h>\n#include <fcntl.h>\n", "lseek",     "pread"      },
-        { "#include <io.h>\n#include <fcntl.h>\n",     "_lseeki64", "NO_PREAD64" },
+        { "#include <io.h>\n#include <stdio.h>\n",     "_lseeki64", "NO_PREAD64" },
         { NULL, NULL, NULL }
     };
     int i;

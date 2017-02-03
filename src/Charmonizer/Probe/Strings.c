@@ -16,6 +16,7 @@
 
 #include "Charmonizer/Core/Compiler.h"
 #include "Charmonizer/Core/ConfWriter.h"
+#include "Charmonizer/Core/HeaderChecker.h"
 #include "Charmonizer/Probe/Strings.h"
 
 #include <stdlib.h>
@@ -46,23 +47,6 @@ chaz_Strings_probe_c99_snprintf(void) {
         CHAZ_QUOTE(      printf("%d", result);                      )
         CHAZ_QUOTE(      return 0;                                  )
         CHAZ_QUOTE(  }                                              );
-    static const char detect__scprintf_code[] =
-        CHAZ_QUOTE(  #include <stdio.h>                             )
-        CHAZ_QUOTE(  int main() {                                   )
-        CHAZ_QUOTE(      int  result;                               )
-        CHAZ_QUOTE(      result = _scprintf("%s", "12345");         )
-        CHAZ_QUOTE(      printf("%d", result);                      )
-        CHAZ_QUOTE(      return 0;                                  )
-        CHAZ_QUOTE(  }                                              );
-    static const char detect__snprintf_code[] =
-        CHAZ_QUOTE(  #include <stdio.h>                             )
-        CHAZ_QUOTE(  int main() {                                   )
-        CHAZ_QUOTE(      char buf[6];                               )
-        CHAZ_QUOTE(      int  result;                               )
-        CHAZ_QUOTE(      result = _snprintf(buf, 6, "%s", "12345"); )
-        CHAZ_QUOTE(      printf("%d", result);                      )
-        CHAZ_QUOTE(      return 0;                                  )
-        CHAZ_QUOTE(  }                                              );
     char   *output = NULL;
     size_t  output_len;
 
@@ -81,15 +65,11 @@ chaz_Strings_probe_c99_snprintf(void) {
 
     /* Test for _scprintf and _snprintf found in the MSVCRT.
      */
-    output = chaz_CC_capture_output(detect__scprintf_code, &output_len);
-    if (output != NULL) {
+    if (chaz_HeadCheck_defines_symbol("_scprintf", "#include <stdio.h>")) {
         chaz_ConfWriter_add_def("HAS__SCPRINTF", NULL);
-        free(output);
     }
-    output = chaz_CC_capture_output(detect__snprintf_code, &output_len);
-    if (output != NULL) {
+    if (chaz_HeadCheck_defines_symbol("_snprintf", "#include <stdio.h>")) {
         chaz_ConfWriter_add_def("HAS__SNPRINTF", NULL);
-        free(output);
     }
 }
 
