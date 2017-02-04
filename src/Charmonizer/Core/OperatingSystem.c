@@ -127,6 +127,15 @@ chaz_OS_shell_type(void) {
     return chaz_OS.shell_type;
 }
 
+const char*
+chaz_OS_exe_ext(void) {
+#ifdef _WIN32
+    return ".exe";
+#else
+    return "";
+#endif
+}
+
 int
 chaz_OS_remove(const char *name) {
     /*

@@ -83,6 +83,13 @@ chaz_OS_dir_sep(void);
 int
 chaz_OS_shell_type(void);
 
+/* Return the file extension for executables on this system. This can be
+ * a different value than returned by chaz_CC_exe_ext() when
+ * cross-compiling.
+ */
+const char*
+chaz_OS_exe_ext(void);
+
 /* Initialize the Charmonizer/Core/OperatingSystem module.
  */
 void
