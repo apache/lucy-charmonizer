@@ -41,7 +41,7 @@ typedef int
  * @param make_command Name of the make command. Auto-detect if NULL.
  */
 void
-chaz_Make_init(const char *make_command);
+chaz_Make_init(chaz_CLI *cli);
 
 /** Clean up the environment.
  */
@@ -103,6 +103,11 @@ chaz_MakeRule*
 chaz_MakeFile_add_rule(chaz_MakeFile *self, const char *target,
                        const char *prereq);
 
+/** Return the rule for the 'install' target.
+ */
+chaz_MakeRule*
+chaz_MakeFile_install_rule(chaz_MakeFile *self);
+
 /** Return the rule for the 'clean' target.
  */
 chaz_MakeRule*
@@ -117,10 +122,11 @@ chaz_MakeFile_distclean_rule(chaz_MakeFile *self);
  *
  * @param dir The target directory or NULL for the current directory.
  * @param basename The name of the executable without extension.
+ * @param installed Whether the executable will be installed.
  */
 chaz_MakeBinary*
 chaz_MakeFile_add_exe(chaz_MakeFile *self, const char *dir,
-                      const char *basename);
+                      const char *basename, int installed);
 
 /** Add a shared library. The library will be built in the current directory.
  * Returns a chaz_MakeBinary object.
@@ -129,21 +135,23 @@ chaz_MakeFile_add_exe(chaz_MakeFile *self, const char *dir,
  * @param basename The name of the library without prefix and extension.
  * @param version The version of the library.
  * @param major_version The major version of the library.
+ * @param installed Whether the library will be installed.
  */
 chaz_MakeBinary*
 chaz_MakeFile_add_shared_lib(chaz_MakeFile *self, const char *dir,
                              const char *basename, const char *version,
-                             const char *major_version);
+                             const char *major_version, int installed);
 
 /** Add a static library. The library will be built in the current directory.
  * Returns a chaz_MakeBinary object.
  *
  * @param dir The target directory or NULL for the current directory.
  * @param basename The name of the library without prefix and extension.
+ * @param installed Whether the library will be installed.
  */
 chaz_MakeBinary*
 chaz_MakeFile_add_static_lib(chaz_MakeFile *self, const char *dir,
-                             const char *basename);
+                             const char *basename, int installed);
 
 /** Add a rule to build the lemon parser generator.
  *
@@ -158,6 +166,41 @@ chaz_MakeFile_add_lemon_exe(chaz_MakeFile *self, const char *dir);
  */
 chaz_MakeRule*
 chaz_MakeFile_add_lemon_grammar(chaz_MakeFile *self, const char *base_name);
+
+/** Add command to install rule that copies a file to a target directory.
+ *
+ * @param src Path to the file.
+ * @param root Destination root directory.
+ * @param dest Destination directory relative to root. May be NULL.
+ */
+void
+chaz_MakeFile_install(chaz_MakeFile *self, const char *src, const char *root,
+                      const char *dest);
+
+/** Add command to install rule that copies a directory to a target
+ * directory.
+ *
+ * @param src Path to the directory.
+ * @param root Destination root directory.
+ * @param dest Destination directory relative to root. May be NULL.
+ */
+void
+chaz_MakeFile_install_dir(chaz_MakeFile *self, const char *src,
+                          const char *root, const char *dest);
+
+/** Add command to install rule that creates a pkgconfig file in
+ * `$(LIBDIR)/pkgconfig`. The following pkgconfig variables are set:
+ *
+ * - `version`: Contains the value of the `version` argument.
+ * - `libdir`: Contains the value of $(LIBDIR).
+ *
+ * @param name Name of the pkgconfig file without extension.
+ * @param version The version.
+ * @param content The main content of the pkgconfig file.
+ */
+void
+chaz_MakeFile_install_pkgconfig(chaz_MakeFile *self, const char *name,
+                                const char *version, const char *content);
 
 /** Write the makefile to a file named 'Makefile' in the current directory.
  */
@@ -192,6 +235,13 @@ chaz_MakeRule_add_prereq(chaz_MakeRule *self, const char *prereq);
  */
 void
 chaz_MakeRule_add_command(chaz_MakeRule *self, const char *command);
+
+/** Add a command to create a directory.
+ *
+ * @param files The directory.
+ */
+void
+chaz_MakeRule_add_mkdir_command(chaz_MakeRule *self, const char *dir);
 
 /** Add a command to remove one or more files.
  *

@@ -45,6 +45,12 @@ chaz_Probe_parse_cli_args(int argc, const char *argv[], chaz_CLI *cli) {
     chaz_CLI_register(cli, "cc", "compiler command", CHAZ_CLI_ARG_REQUIRED);
     chaz_CLI_register(cli, "cflags", NULL, CHAZ_CLI_ARG_OPTIONAL);
     chaz_CLI_register(cli, "make", "make command", CHAZ_CLI_ARG_OPTIONAL);
+    chaz_CLI_register(cli, "prefix", "install prefix", CHAZ_CLI_ARG_OPTIONAL);
+    chaz_CLI_register(cli, "bindir", "install dir for executables", CHAZ_CLI_ARG_OPTIONAL);
+    chaz_CLI_register(cli, "datarootdir", "root install dir for data files", CHAZ_CLI_ARG_OPTIONAL);
+    chaz_CLI_register(cli, "datadir", "install dir for data files", CHAZ_CLI_ARG_OPTIONAL);
+    chaz_CLI_register(cli, "libdir", "install dir for libraries", CHAZ_CLI_ARG_OPTIONAL);
+    chaz_CLI_register(cli, "mandir", "install dir for man pages", CHAZ_CLI_ARG_OPTIONAL);
 
     /* Parse options, exiting on failure. */
     if (!chaz_CLI_parse(cli, argc, argv)) {
@@ -133,7 +139,7 @@ chaz_Probe_init(struct chaz_CLI *cli) {
     chaz_CC_init(chaz_CLI_strval(cli, "cc"), chaz_CLI_strval(cli, "cflags"));
     chaz_ConfWriter_init();
     chaz_HeadCheck_init();
-    chaz_Make_init(chaz_CLI_strval(cli, "make"));
+    chaz_Make_init(cli);
 
     /* Enable output. */
     if (chaz_CLI_defined(cli, "enable-c")) {
