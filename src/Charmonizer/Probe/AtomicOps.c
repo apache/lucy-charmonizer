@@ -23,32 +23,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-
-static int
-chaz_AtomicOps_osatomic_cas_ptr(void) {
-    static const char osatomic_casptr_code[] =
-        CHAZ_QUOTE(  #include <libkern/OSAtomic.h>                                  )
-        CHAZ_QUOTE(  #include <libkern/OSAtomic.h>                                  )
-        CHAZ_QUOTE(  int main() {                                                   )
-        CHAZ_QUOTE(      int  foo = 1;                                              )
-        CHAZ_QUOTE(      int *foo_ptr = &foo;                                       )
-        CHAZ_QUOTE(      int *target = NULL;                                        )
-        CHAZ_QUOTE(      OSAtomicCompareAndSwapPtr(NULL, foo_ptr, (void**)&target); )
-        CHAZ_QUOTE(      return 0;                                                  )
-        CHAZ_QUOTE(  }                                                              );
-     return chaz_CC_test_compile(osatomic_casptr_code);
-}
-
 void
 chaz_AtomicOps_run(void) {
     chaz_ConfWriter_start_module("AtomicOps");
 
+    if (chaz_HeadCheck_check_header("stdatomic.h")) {
+        chaz_ConfWriter_add_def("HAS_STDATOMIC_H", NULL);
+    }
     if (chaz_HeadCheck_check_header("libkern/OSAtomic.h")) {
         chaz_ConfWriter_add_def("HAS_LIBKERN_OSATOMIC_H", NULL);
 
         /* Check for OSAtomicCompareAndSwapPtr, introduced in later versions
          * of OSAtomic.h. */
-        if (chaz_AtomicOps_osatomic_cas_ptr()) {
+        if (chaz_HeadCheck_defines_symbol("OSAtomicCompareAndSwapPtr",
+                                          "#include <libkern/OSAtomic.h>")
+           ) {
             chaz_ConfWriter_add_def("HAS_OSATOMIC_CAS_PTR", NULL);
         }
     }
