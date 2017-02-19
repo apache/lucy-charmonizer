@@ -304,39 +304,41 @@ chaz_ConfWriterC_end_module(void) {
     }
 
     /* Write out short names. */
-    fprintf(chaz_ConfWriterC.fh,
-        "\n#if defined(CHY_USE_SHORT_NAMES) "
-        "|| defined(CHAZ_USE_SHORT_NAMES)\n"
-    );
-    for (i = 0; i < chaz_ConfWriterC.def_count; i++) {
-        switch (defs[i].type) {
-            case CHAZ_CONFELEM_DEF:
-            case CHAZ_CONFELEM_TYPEDEF:
-                {
-                    const char *sym = defs[i].str1;
-                    const char *value = defs[i].str2;
-                    if (!value || strcmp(sym, value) != 0) {
-                        const char *prefix
-                            = chaz_ConfWriterC_sym_is_uppercase(sym)
-                              ? "CHY_" : "chy_";
-                        fprintf(chaz_ConfWriterC.fh, "  #define %s %s%s\n",
-                                sym, prefix, sym);
+    if (chaz_ConfWriterC.def_count > 0) {
+        fprintf(chaz_ConfWriterC.fh,
+            "\n#if defined(CHY_USE_SHORT_NAMES) "
+            "|| defined(CHAZ_USE_SHORT_NAMES)\n"
+        );
+        for (i = 0; i < chaz_ConfWriterC.def_count; i++) {
+            switch (defs[i].type) {
+                case CHAZ_CONFELEM_DEF:
+                case CHAZ_CONFELEM_TYPEDEF:
+                    {
+                        const char *sym = defs[i].str1;
+                        const char *value = defs[i].str2;
+                        if (!value || strcmp(sym, value) != 0) {
+                            const char *prefix
+                                = chaz_ConfWriterC_sym_is_uppercase(sym)
+                                  ? "CHY_" : "chy_";
+                            fprintf(chaz_ConfWriterC.fh, "  #define %s %s%s\n",
+                                    sym, prefix, sym);
+                        }
                     }
-                }
-                break;
-            case CHAZ_CONFELEM_GLOBAL_DEF:
-            case CHAZ_CONFELEM_GLOBAL_TYPEDEF:
-            case CHAZ_CONFELEM_SYS_INCLUDE:
-            case CHAZ_CONFELEM_LOCAL_INCLUDE:
-                /* no-op */
-                break;
-            default:
-                chaz_Util_die("Internal error: bad element type %d",
-                              (int)defs[i].type);
+                    break;
+                case CHAZ_CONFELEM_GLOBAL_DEF:
+                case CHAZ_CONFELEM_GLOBAL_TYPEDEF:
+                case CHAZ_CONFELEM_SYS_INCLUDE:
+                case CHAZ_CONFELEM_LOCAL_INCLUDE:
+                    /* no-op */
+                    break;
+                default:
+                    chaz_Util_die("Internal error: bad element type %d",
+                                  (int)defs[i].type);
+            }
         }
-    }
 
-    fprintf(chaz_ConfWriterC.fh, "#endif /* USE_SHORT_NAMES */\n");
+        fprintf(chaz_ConfWriterC.fh, "#endif /* USE_SHORT_NAMES */\n");
+    }
 
     /* Write out global definitions and system includes. */
     if (num_globals) {
